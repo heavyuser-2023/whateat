@@ -69,32 +69,14 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
       
       // 추천 결과가 없거나 모델이 적절하게 응답하지 않았을 때 기본 처리
       if (analysisResult.recommendations.isEmpty) {
-        print('추천 결과가 없습니다. 일반적인 건강식 추천으로 대체합니다.');
-        // 모의 데이터 생성
-        final defaultRecommendations = [
-          FoodRecommendation(
-            name: "샐러드", 
-            description: "여러 건강 상태에 도움이 되는 가벼운 식사입니다.", 
-            compatibilityScore: 0.95
-          ),
-          FoodRecommendation(
-            name: "현미밥", 
-            description: "정제되지 않은 통곡물로 영양가가 높습니다.", 
-            compatibilityScore: 0.85
-          ),
-          FoodRecommendation(
-            name: "찐 생선", 
-            description: "지방이 적고 단백질이 풍부합니다.", 
-            compatibilityScore: 0.80
-          )
-        ];
+        print('추천 결과가 없습니다.');
         
         setState(() {
-          _recommendations = defaultRecommendations;
+          _recommendations = []; // 빈 추천 목록 유지
           _recognizedFood = analysisResult.recognizedFood.isEmpty ? 
               "메뉴 분석 결과" : analysisResult.recognizedFood;
           _evaluation = analysisResult.evaluation.isEmpty ? 
-              "선택하신 건강 상태에 맞는 일반적인 추천입니다." : analysisResult.evaluation;
+              "이 메뉴에서 건강 상태에 적합한 음식을 찾을 수 없습니다." : analysisResult.evaluation;
           _isLoading = false;
         });
       } else {
@@ -193,11 +175,17 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('분석 결과'),
-        backgroundColor: Colors.green,
+        title: const Text(
+          '분석 결과',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.green.shade700,
         actions: [
           IconButton(
-            icon: const Icon(Icons.history),
+            icon: const Icon(Icons.history, color: Colors.white),
             onPressed: _viewMealHistory,
             tooltip: '식사 기록 보기',
           ),
@@ -261,8 +249,11 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   }
   
   Widget _buildResultView() {
-    // 추천 음식 목록을 compatibilityScore 기준으로 정렬
-    final sortedRecommendations = List<FoodRecommendation>.from(_recommendations)
+    // 추천 음식 목록을 건강에 좋은 음식과 차선책으로 분리
+    final goodFoods = _recommendations.where((rec) => !rec.name.toLowerCase().contains('차선책')).toList()
+      ..sort((a, b) => b.compatibilityScore.compareTo(a.compatibilityScore));
+    
+    final alternativeFoods = _recommendations.where((rec) => rec.name.toLowerCase().contains('차선책')).toList()
       ..sort((a, b) => b.compatibilityScore.compareTo(a.compatibilityScore));
       
     return SingleChildScrollView(
@@ -323,151 +314,259 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
             ),
           ),
           
-          // 추천 음식 제목
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              '이 메뉴에서 건강에 좋은 음식 순위',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Colors.green,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          
-          // 다시 분석 버튼
+          // 다시 분석 버튼 (모든 추천이 없을 때)
           if (_recommendations.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: ElevatedButton.icon(
-                onPressed: _retryAnalysis,
-                icon: const Icon(Icons.refresh),
-                label: const Text('다시 분석하기'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                children: [
+                  // 추천 음식 제목
+                  Text(
+                    '추천 결과',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Colors.green.shade800,
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(
+                          color: Colors.white,
+                          offset: Offset(0, 0),
+                          blurRadius: 3,
+                        ),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    '이 메뉴에서 건강 상태에 적합한 음식을 찾을 수 없습니다.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '다른 메뉴를 다시 시도해보세요.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 15),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: _retryAnalysis,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('다시 분석하기'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
+                ],
               ),
             ),
           
-          // 추천 음식 목록
-          _recommendations.isEmpty
-              ? Container(
-                  padding: const EdgeInsets.all(32.0),
-                  alignment: Alignment.center,
-                  child: const Text(
-                    '이 메뉴에서 건강 상태에 적합한 음식을 찾을 수 없습니다.\n다른 메뉴를 다시 시도해보세요.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16),
-                  ),
-                )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 24.0, left: 16.0, right: 16.0),
-                  itemCount: sortedRecommendations.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    final recommendation = sortedRecommendations[index];
-                    final isSelected = recommendation.name == _selectedFoodName;
-                    final rank = index + 1; // 1부터 시작하는 순위
-                    
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 8.0),
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                      color: isSelected ? Colors.green.shade100 : null,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: _getRankColor(rank),
-                                  foregroundColor: Colors.white,
-                                  radius: 20,
-                                  child: Text(
-                                    '$rank',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Text(
-                                    recommendation.name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: _getCompatibilityColor(recommendation.compatibilityScore).withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    '적합도 ${(recommendation.compatibilityScore * 100).toStringAsFixed(0)}%',
-                                    style: TextStyle(
-                                      color: _getCompatibilityColor(recommendation.compatibilityScore),
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  '추천 이유:',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  recommendation.description,
-                                  style: const TextStyle(fontSize: 15),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            alignment: Alignment.centerRight,
-                            padding: const EdgeInsets.fromLTRB(0, 0, 8.0, 8.0),
-                            child: isSelected
-                                ? TextButton.icon(
-                                    icon: const Icon(Icons.check_circle, color: Colors.green),
-                                    label: const Text('저장됨', style: TextStyle(color: Colors.green)),
-                                    onPressed: null,
-                                  )
-                                : TextButton.icon(
-                                    icon: const Icon(Icons.add_circle_outline, color: Colors.blue),
-                                    label: const Text('식사로 저장'),
-                                    onPressed: () => _saveMeal(recommendation.name),
-                                  ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+          // 건강에 좋은 음식 섹션
+          if (goodFoods.isNotEmpty) ...[
+            // 건강에 좋은 음식 제목
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                '이 메뉴에서 건강에 좋은 음식 순위',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Colors.green.shade800,
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(
+                      color: Colors.white,
+                      offset: Offset(0, 0),
+                      blurRadius: 3,
+                    ),
+                  ],
                 ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            
+            // 건강에 좋은 음식 목록
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 16.0, left: 16.0, right: 16.0),
+              itemCount: goodFoods.length,
+              itemBuilder: (BuildContext context, int index) {
+                return _buildFoodCard(goodFoods[index], index + 1, false);
+              },
+            ),
+          ],
+          
+          // 차선책 음식 섹션
+          if (alternativeFoods.isNotEmpty) ...[
+            // 차선책 음식 제목
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16.0),
+              margin: const EdgeInsets.only(top: 8.0),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.amber.shade50, Colors.white],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+              child: Text(
+                '이 메뉴에서 차선책 추천',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Colors.amber.shade800,
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(
+                      color: Colors.white,
+                      offset: Offset(0, 0),
+                      blurRadius: 3,
+                    ),
+                  ],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            
+            // 차선책 음식 목록
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 24.0, left: 16.0, right: 16.0),
+              itemCount: alternativeFoods.length,
+              itemBuilder: (BuildContext context, int index) {
+                return _buildFoodCard(alternativeFoods[index], null, true);
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // 음식 카드 위젯 생성 메서드
+  Widget _buildFoodCard(FoodRecommendation recommendation, int? rank, bool isAlternative) {
+    final isSelected = recommendation.name == _selectedFoodName;
+    
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      color: isSelected 
+        ? Colors.green.shade100 
+        : isAlternative 
+          ? Colors.amber.shade50 
+          : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
+            child: Row(
+              children: [
+                isAlternative 
+                ? Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade100,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(
+                      Icons.lightbulb_outline,
+                      color: Colors.amber,
+                      size: 24,
+                    ),
+                  )
+                : CircleAvatar(
+                    backgroundColor: rank != null ? _getRankColor(rank) : Colors.green,
+                    foregroundColor: Colors.white,
+                    radius: 20,
+                    child: Text(
+                      rank != null ? '$rank' : '',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    isAlternative 
+                      ? recommendation.name.replaceFirst('차선책: ', '') 
+                      : recommendation.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isAlternative 
+                      ? Colors.amber.withOpacity(0.2)
+                      : _getCompatibilityColor(recommendation.compatibilityScore).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: isAlternative
+                    ? const Text(
+                        '차선책',
+                        style: TextStyle(
+                          color: Colors.amber,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : Text(
+                        '적합도 ${(recommendation.compatibilityScore * 100).toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          color: _getCompatibilityColor(recommendation.compatibilityScore),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '추천 이유:',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  recommendation.description,
+                  style: const TextStyle(fontSize: 15),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.fromLTRB(0, 0, 8.0, 8.0),
+            child: isSelected
+                ? TextButton.icon(
+                    icon: const Icon(Icons.check_circle, color: Colors.green),
+                    label: const Text('저장됨', style: TextStyle(color: Colors.green)),
+                    onPressed: null,
+                  )
+                : TextButton.icon(
+                    icon: const Icon(Icons.add_circle_outline, color: Colors.blue),
+                    label: const Text('식사로 저장'),
+                    onPressed: () => _saveMeal(recommendation.name),
+                  ),
+          ),
         ],
       ),
     );

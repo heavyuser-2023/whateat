@@ -107,8 +107,14 @@ class _CameraScreenState extends State<CameraScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('음식 사진 촬영'),
-        backgroundColor: Colors.green,
+        title: const Text(
+          '음식 사진 촬영',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.green.shade700,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

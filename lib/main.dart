@@ -193,8 +193,19 @@ class SplashView extends StatelessWidget {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // .env 파일 로드
-  await dotenv.load();
+  // .env 파일 로드 및 확인
+  try {
+    await dotenv.load(fileName: 'assets/config/.env');
+    print('환경 변수 로드됨: ${dotenv.env.keys.join(", ")}');
+    
+    if (dotenv.env['GOOGLE_API_KEY'] == null && dotenv.env['GEMINI_API_KEY'] == null) {
+      print('경고: API 키가 로드되지 않았습니다. .env 파일을 확인하세요.');
+    } else {
+      print('API 키 길이: ${(dotenv.env['GOOGLE_API_KEY'] ?? dotenv.env['GEMINI_API_KEY'] ?? '').length}자');
+    }
+  } catch (e) {
+    print('환경 변수 로드 오류: $e');
+  }
   
   // 네이티브 스플래시 화면을 즉시 제거하기 위한 설정
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -287,7 +298,7 @@ class HomePage extends StatelessWidget {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(20),
                             child: Image.asset(
-                              'assets/images/왓이트아이콘.png',
+                              'assets/images/whateat_icon.png',
                               width: 120,
                               height: 120,
                             ),

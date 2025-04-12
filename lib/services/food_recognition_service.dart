@@ -24,10 +24,20 @@ class FoodRecognitionService {
   factory FoodRecognitionService() => _instance;
   FoodRecognitionService._internal();
   
-  final String baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent';
+  final String baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
   
   // .env 파일에서 API 키를 로드
-  String get apiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
+  String get apiKey {
+    // 먼저 GEMINI_API_KEY 시도
+    String? key = dotenv.env['GEMINI_API_KEY'];
+    // 없으면 GOOGLE_API_KEY 시도
+    if (key == null || key.isEmpty) {
+      key = dotenv.env['GOOGLE_API_KEY'];
+    }
+    // 디버깅용 로그
+    print('API 키 로드: ${key?.substring(0, 5)}... (${key?.length ?? 0}자)');
+    return key ?? '';
+  }
   
   // API URL을 생성
   String get apiUrl => '$baseUrl?key=$apiKey';
@@ -62,8 +72,12 @@ class FoodRecognitionService {
         promptText += " 다음 건강 상태에 맞는 선택을 알려주세요: ${healthConditions.join(', ')}.";
       }
       
-      promptText += " 중요: 메뉴에 있는 음식들 중에서만 추천해주세요. 다른 음식은 추천하지 마세요.";
-      promptText += " 평가 후 메뉴 내에서 건강 상태에 적합한 음식을 5가지 순위를 매겨 추천해 주세요.";
+      promptText += " 엄격한 제한사항: 반드시 이 메뉴 이미지에 나와있는 음식 중에서만 추천해야 합니다. 메뉴에 없는 음식은 절대 추천하지 마세요.";
+      promptText += " 메뉴에 있는 음식을 다음 두 가지 카테고리로 분석해 주세요:";
+      promptText += " 1. 건강에 좋은 음식: 메뉴 내에서 건강 상태에 가장 적합한 음식을 최대 5가지 선택하여 추천 목록에 추가해주세요.";
+      promptText += " 2. 차선책 음식: 건강에 완벽하게 좋지는 않지만, 메뉴 내에서 상대적으로 덜 해로운 음식을 최대 3가지 선택하여 '차선책: ' 접두어를 붙여 추천 목록에 함께 추가해주세요.";
+      promptText += " 두 카테고리 모두 메뉴에 있는 실제 음식 이름을 사용해야 합니다. 일반적인 조언이 아닌 실제 메뉴 항목만 추천해주세요.";
+      promptText += " 만약 메뉴에서 건강에 좋은 음식이 전혀 없다면, 차선책만 제공해주세요.";
       promptText += " JSON 형식으로 응답해주세요: {\"recognized_food\": \"인식된 메뉴 이름\", \"evaluation\": \"건강 상태에 대한 평가\", \"recommendations\": [{\"name\": \"메뉴에서 추천하는 음식 이름\", \"description\": \"추천 이유\", \"compatibilityScore\": 0.95}, ...]}";
       
       print('최종 프롬프트: $promptText'); // 디버그 로그
@@ -90,11 +104,31 @@ class FoodRecognitionService {
           "temperature": 0.4,
           "topK": 32,
           "topP": 0.95,
-          "maxOutputTokens": 2048,  // 토큰 수 증가
-        }
+          "maxOutputTokens": 2048,
+        },
+        "safety_settings": [
+          {
+            "category": "HARM_CATEGORY_HARASSMENT",
+            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            "category": "HARM_CATEGORY_HATE_SPEECH",
+            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+          }
+        ]
       });
 
       // 실제 API 호출
+      print('API 호출 URL: $apiUrl'); // 디버깅용 로그
+      
       final response = await http.post(
         Uri.parse(apiUrl),
         headers: {
@@ -103,6 +137,8 @@ class FoodRecognitionService {
         body: payload,
       );
 
+      print('API 응답 상태 코드: ${response.statusCode}'); // 디버깅용 로그
+
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
         
@@ -110,7 +146,25 @@ class FoodRecognitionService {
         return _parseFullGeminiResponse(jsonResponse);
       } else {
         print('API 호출 실패: ${response.statusCode} - ${response.body}');
-        throw Exception('API 호출 실패: ${response.reasonPhrase}');
+        print('API URL: $baseUrl');
+        print('사용된 API 키 길이: ${apiKey.length}자');
+        print('사용된 모델: gemini-1.5-flash');
+        
+        // 자세한 오류 정보 추출 시도
+        try {
+          final errorJson = jsonDecode(response.body);
+          final errorMessage = errorJson['error']?['message'] ?? '알 수 없는 오류';
+          print('API 오류 메시지: $errorMessage');
+        } catch (e) {
+          print('응답 본문 파싱 실패: $e');
+        }
+        
+        // API 호출 실패 시 빈 결과 제공
+        return FoodAnalysisResult(
+          recognizedFood: '메뉴 분석 (API 호출 실패)',
+          evaluation: 'API 연결에 문제가 있었습니다. 메뉴를 다시 분석해주세요.',
+          recommendations: [] // 기본 차선책 제거
+        );
       }
     } catch (e) {
       print('음식 인식 오류: $e');
@@ -184,6 +238,22 @@ class FoodRecognitionService {
               print('추천 목록을 찾을 수 없거나 형식이 잘못됨: ${data['recommendations']}'); // 디버그용 로그
             }
             
+            if (recommendations.isEmpty) {
+              // 추천 항목이 없다면 일부 텍스트를 사용하여 대안 항목 추가 가능성 검토
+              // 평가 텍스트에서 가능한 대안이 있는지 확인
+              if (evaluation.toLowerCase().contains("차선책") || 
+                  evaluation.toLowerCase().contains("대체") || 
+                  evaluation.toLowerCase().contains("그래도") || 
+                  evaluation.toLowerCase().contains("차선")) {
+                
+                recommendations.add(FoodRecommendation(
+                  name: '차선책: 메뉴에서 가장 덜 해로운 선택',
+                  description: evaluation,
+                  compatibilityScore: 0.6,
+                ));
+              }
+            }
+            
             return FoodAnalysisResult(
               recognizedFood: recognizedFood,
               evaluation: evaluation,
@@ -234,12 +304,19 @@ class FoodRecognitionService {
         }
         
         if (recommendations.isEmpty) {
-          // 추천 항목이 없다면 일부 텍스트를 사용하여 더미 데이터 생성
-          recommendations.add(FoodRecommendation(
-            name: '건강한 대체 음식',
-            description: evaluation,
-            compatibilityScore: 0.9,
-          ));
+          // 추천 항목이 없다면 일부 텍스트를 사용하여 대안 항목 추가 가능성 검토
+          // 평가 텍스트에서 가능한 대안이 있는지 확인
+          if (evaluation.toLowerCase().contains("차선책") || 
+              evaluation.toLowerCase().contains("대체") || 
+              evaluation.toLowerCase().contains("그래도") || 
+              evaluation.toLowerCase().contains("차선")) {
+            
+            recommendations.add(FoodRecommendation(
+              name: '차선책: 메뉴에서 가장 덜 해로운 선택',
+              description: evaluation,
+              compatibilityScore: 0.6,
+            ));
+          }
         }
         
         return FoodAnalysisResult(
