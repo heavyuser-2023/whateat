@@ -1,0 +1,2 @@
+/Users/heavyuser/vscode/what_eat/android/app/.cxx/Debug/4u58pccz/x86/CMakeFiles/edit_cache.dir
+/Users/heavyuser/vscode/what_eat/android/app/.cxx/Debug/4u58pccz/x86/CMakeFiles/rebuild_cache.dir

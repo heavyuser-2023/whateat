@@ -1,0 +1,2 @@
+/Users/heavyuser/vscode/what_eat/android/app/.cxx/RelWithDebInfo/o4b5k472/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/heavyuser/vscode/what_eat/android/app/.cxx/RelWithDebInfo/o4b5k472/armeabi-v7a/CMakeFiles/rebuild_cache.dir
