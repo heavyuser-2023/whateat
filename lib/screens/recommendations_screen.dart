@@ -29,7 +29,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   bool _hasError = false;
   String _errorMessage = '';
   List<FoodRecommendation> _recommendations = [];
-  String? _selectedFoodName;
+  Set<String> _selectedFoodNames = {};
   String _recognizedFood = '';
   String _evaluation = '';
 
@@ -202,7 +202,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
         
         setState(() {
           _isLoading = false;
-          _selectedFoodName = foodName;
+          _selectedFoodNames.add(foodName);
         });
 
         // 저장 완료 메시지 표시
@@ -578,7 +578,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
 
   // 음식 카드 위젯 생성 메서드
   Widget _buildFoodCard(FoodRecommendation recommendation, int? rank, bool isAlternative) {
-    final isSelected = recommendation.name == _selectedFoodName;
+    final isSelected = _selectedFoodNames.contains(recommendation.name);
     
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
