@@ -6,6 +6,7 @@ class Meal {
   final String name;
   final String description;
   final String imagePath;
+  final List<int>? imageData;
   final DateTime date;
   final List<String> healthConditions;
 
@@ -14,6 +15,7 @@ class Meal {
     required this.name,
     required this.description,
     required this.imagePath,
+    this.imageData,
     required this.date,
     required this.healthConditions,
   });
@@ -24,6 +26,7 @@ class Meal {
       'name': name,
       'description': description,
       'imagePath': imagePath,
+      'imageData': imageData,
       'date': date.toIso8601String(),
       'healthConditions': jsonEncode(healthConditions),
     };
@@ -48,6 +51,12 @@ class Meal {
       
       // 이미지 경로 처리
       String imagePath = map['imagePath'] ?? '';
+      
+      // 이미지 데이터 처리
+      List<int>? imageData;
+      if (map['imageData'] != null) {
+        imageData = List<int>.from(map['imageData']);
+      }
       
       // 이미지 경로 유효성 확인
       if (imagePath.isNotEmpty) {
@@ -86,6 +95,7 @@ class Meal {
         name: map['name'] ?? '알 수 없는 식사',
         description: map['description'] ?? '',
         imagePath: imagePath,
+        imageData: imageData,
         date: date,
         healthConditions: healthConditions,
       );
@@ -97,6 +107,7 @@ class Meal {
         name: '데이터 오류',
         description: '식사 정보를 불러오는 중 오류가 발생했습니다.',
         imagePath: '',
+        imageData: null,
         date: DateTime.now(),
         healthConditions: [],
       );
@@ -108,6 +119,7 @@ class Meal {
     String? name,
     String? description,
     String? imagePath,
+    List<int>? imageData,
     DateTime? date,
     List<String>? healthConditions,
   }) {
@@ -116,6 +128,7 @@ class Meal {
       name: name ?? this.name,
       description: description ?? this.description,
       imagePath: imagePath ?? this.imagePath,
+      imageData: imageData ?? this.imageData,
       date: date ?? this.date,
       healthConditions: healthConditions ?? this.healthConditions,
     );

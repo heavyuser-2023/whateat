@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:typed_data';
 import '../database/database_helper.dart';
 import '../models/meal.dart';
 
@@ -349,9 +350,12 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> with WidgetsBindi
   }
 
   Widget _buildMealCard(Meal meal) {
-    // 이미지 파일 존재 확인
+    // 이미지 존재 확인
     bool imageExists = false;
-    if (meal.imagePath.isNotEmpty) {
+    bool hasImageData = meal.imageData != null && meal.imageData!.isNotEmpty;
+    
+    // 파일 존재 확인 (imageData가 없는 경우)
+    if (!hasImageData && meal.imagePath.isNotEmpty) {
       try {
         final file = File(meal.imagePath);
         imageExists = file.existsSync();
@@ -375,12 +379,12 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> with WidgetsBindi
             borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
             child: Container(
               height: 180,
-              child: imageExists
-                ? Image.file(
-                    File(meal.imagePath),
+              child: hasImageData
+                ? Image.memory(
+                    Uint8List.fromList(meal.imageData!),
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
-                      print('이미지 로드 오류: $error');
+                      print('이미지 메모리 로드 오류: $error');
                       return Container(
                         color: Colors.grey.shade200,
                         child: const Center(
@@ -389,12 +393,26 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> with WidgetsBindi
                       );
                     },
                   )
-                : Container(
-                    color: Colors.grey.shade200,
-                    child: const Center(
-                      child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
+                : imageExists
+                  ? Image.file(
+                      File(meal.imagePath),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        print('이미지 파일 로드 오류: $error');
+                        return Container(
+                          color: Colors.grey.shade200,
+                          child: const Center(
+                            child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
+                          ),
+                        );
+                      },
+                    )
+                  : Container(
+                      color: Colors.grey.shade200,
+                      child: const Center(
+                        child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
+                      ),
                     ),
-                  ),
             ),
           ),
           ListTile(

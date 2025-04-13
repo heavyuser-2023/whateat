@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path, 
-      version: 2,
+      version: 3,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -45,6 +45,7 @@ class DatabaseHelper {
         name TEXT NOT NULL,
         description TEXT NOT NULL,
         imagePath TEXT NOT NULL,
+        imageData BLOB,
         date TEXT NOT NULL,
         healthConditions TEXT NOT NULL
       )
@@ -115,6 +116,24 @@ class DatabaseHelper {
         await db.insert('health_conditions', condition.toMap());
       }
     }
+    
+    // 버전 2에서 3으로 업그레이드: meals 테이블에 imageData 컬럼 추가
+    if (oldVersion < 3) {
+      try {
+        // 이미 imageData 컬럼이 있는지 확인
+        final tableInfo = await db.rawQuery("PRAGMA table_info(meals)");
+        final hasImageData = tableInfo.any((column) => column['name'] == 'imageData');
+        
+        if (!hasImageData) {
+          await db.execute('ALTER TABLE meals ADD COLUMN imageData BLOB');
+          print('meals 테이블에 imageData 컬럼 추가됨');
+        } else {
+          print('meals 테이블에 이미 imageData 컬럼이 존재함');
+        }
+      } catch (e) {
+        print('meals 테이블 업그레이드 오류: $e');
+      }
+    }
   }
 
   // 건강 조건 관련 메서드
@@ -170,6 +189,26 @@ class DatabaseHelper {
       // id 필드가 null이 아니면 ID 필드를 제거 (자동 증가 필드가 작동하도록)
       if (mealMap.containsKey('id') && mealMap['id'] == null) {
         mealMap.remove('id');
+      }
+      
+      // 이미지 파일이 있으면 바이너리 데이터로 읽어서 저장
+      if (meal.imagePath.isNotEmpty) {
+        try {
+          final File imageFile = File(meal.imagePath);
+          if (await imageFile.exists()) {
+            final imageBytes = await imageFile.readAsBytes();
+            mealMap['imageData'] = imageBytes;
+            print('이미지 데이터 크기: ${imageBytes.length} 바이트'); // 디버그 로그
+          } else {
+            print('이미지 파일이 존재하지 않음: ${meal.imagePath}'); // 디버그 로그
+            mealMap['imageData'] = null;
+          }
+        } catch (e) {
+          print('이미지 데이터 로드 오류: $e'); // 디버그 로그
+          mealMap['imageData'] = null;
+        }
+      } else {
+        mealMap['imageData'] = null;
       }
       
       final id = await db.insert('meals', mealMap);

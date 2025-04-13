@@ -115,163 +115,90 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
     );
   }
 
-  Future<void> _saveMeal(String foodName) async {
+  Future<void> _saveMeal() async {
+    print('식사 저장 시작'); // 디버그 로그
+    
     try {
       setState(() {
         _isLoading = true;
       });
 
-      print('식사 저장 시작: $foodName'); // 디버그 로그
-
-      // 앱 영구 저장소 디렉토리 가져오기
-      final appDir = await getApplicationDocumentsDirectory();
-      final mealDir = Directory('${appDir.path}/meal_images');
-      
-      // 저장 디렉토리가 없으면 생성
-      if (!await mealDir.exists()) {
-        await mealDir.create(recursive: true);
-        print('식사 이미지 디렉토리 생성: ${mealDir.path}'); // 디버그 로그
-      }
-      
-      // 개발용 백업 디렉토리 (디버깅을 위함)
-      final tempDir = Directory('lib/temp_meal_images');
-      if (await tempDir.exists()) {
-        print('개발용 백업 디렉토리 있음: ${tempDir.path}');
-      }
-      
-      // 이미지 파일명 생성 (타임스탬프 기반)
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = 'meal_$timestamp.jpg';
-      final savedImagePath = path_pkg.join(mealDir.path, fileName);
-      
-      // 원본 이미지 파일 확인
-      print('원본 이미지 파일 경로: ${widget.imageFile.path}');
-      print('원본 이미지 파일 존재: ${await widget.imageFile.exists()}');
-      print('원본 이미지 파일 크기: ${await widget.imageFile.length()} 바이트');
-      
-      // 이미지 복사
-      final savedFile = await widget.imageFile.copy(savedImagePath);
-      print('이미지 복사됨, 새 경로: ${savedFile.path}');
-      
-      // 개발용 디버깅 파일 복사 시도 (권한이 있는 곳에 백업)
-      try {
-        if (await tempDir.exists()) {
-          final debugFilePath = path_pkg.join(tempDir.path, fileName);
-          final debugFile = await widget.imageFile.copy(debugFilePath);
-          print('백업용 디버그 이미지 저장: ${debugFile.path}');
-        }
-      } catch (e) {
-        print('디버그용 이미지 백업 실패 (무시해도 됨): $e');
-      }
-      
-      // 복사된 이미지 파일 확인
-      final exists = await savedFile.exists();
-      if (exists) {
-        final fileSize = await savedFile.length();
-        print('저장된 이미지 파일 확인 완료: $fileSize 바이트');
-      } else {
-        print('오류: 저장된 이미지 파일이 존재하지 않습니다');
-        throw Exception('이미지 파일이 저장되지 않았습니다.');
+      // 사용자가 최소 하나의 음식 항목을 선택했는지 확인
+      if (_selectedFoodNames.isEmpty) {
+        _showErrorDialog('저장할 음식을 한 개 이상 선택해주세요');
+        setState(() {
+          _isLoading = false;
+        });
+        return;
       }
 
-      // 해당 추천 항목 가져오기
-      final selectedRecommendation = _recommendations.firstWhere(
-        (recommendation) => recommendation.name == foodName,
-      );
+      // 원본 이미지 파일 접근 확인
+      if (!await widget.imageFile.exists()) {
+        print('원본 이미지 파일이 존재하지 않음: ${widget.imageFile.path}');
+        _showErrorDialog('이미지 파일이 없어 저장할 수 없습니다');
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
 
-      // 식사 정보 저장
-      final DateTime now = DateTime.now();
+      final String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      
+      // 앱 내부 저장소 디렉토리 경로 획득
+      final Directory appDir = await getApplicationDocumentsDirectory();
+      final String mealImagesPath = path_pkg.join(appDir.path, 'meal_images');
+      
+      // 디렉토리 생성 (없는 경우)
+      final Directory mealImagesDir = Directory(mealImagesPath);
+      if (!await mealImagesDir.exists()) {
+        await mealImagesDir.create(recursive: true);
+      }
+      
+      // 저장할 이미지 경로
+      final String savedImagePath = path_pkg.join(mealImagesPath, fileName);
+
+      // 이미지 파일 복사
+      await widget.imageFile.copy(savedImagePath);
+      print('이미지 저장됨: $savedImagePath'); // 디버그 로그
+      
+      // 이미지 데이터 읽기
+      List<int> imageData = await widget.imageFile.readAsBytes();
+      print('이미지 데이터 크기: ${imageData.length} 바이트'); // 디버그 로그
+
+      // 식사 정보 객체 생성
       final meal = Meal(
-        name: selectedRecommendation.name,
-        description: selectedRecommendation.description,
-        imagePath: savedFile.path, // 절대 경로 사용
-        date: now,
+        name: _selectedFoodNames.join(', '),
+        description: _recommendations
+            .where((rec) => _selectedFoodNames.contains(rec.name))
+            .map((rec) => '${rec.name}: ${rec.description}')
+            .join('\n\n'),
+        imagePath: savedImagePath,
+        imageData: imageData,
+        date: DateTime.now(),
         healthConditions: widget.healthConditions,
       );
 
-      print('SQLite에 식사 정보 저장 시작'); // 디버그 로그
-      // SQLite에 저장
-      final mealId = await DatabaseHelper.instance.insertMeal(meal);
-      print('SQLite에 저장 완료, ID: $mealId'); // 디버그 로그
+      // 데이터베이스에 저장
+      final int mealId = await DatabaseHelper.instance.insertMeal(meal);
+      print('저장된 식사 ID: $mealId'); // 디버그 로그
       
-      if (mealId > 0) {
-        final mealWithId = meal.copyWith(id: mealId);
-        
-        // SharedPreferences에도 저장
-        await _saveMealToLocalStorage(mealWithId);
-        
-        setState(() {
-          _isLoading = false;
-          _selectedFoodNames.add(foodName);
-        });
+      // 식사 목록 업데이트 (SharedPreferences)
+      await _updateMealRecords();
+      
+      setState(() {
+        _isLoading = false;
+      });
 
-        // 저장 완료 메시지 표시
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('식사 정보가 저장되었습니다')),
-        );
-      } else {
-        throw Exception('식사 정보 저장 실패: 유효하지 않은 ID');
-      }
+      // 저장 완료 메시지 표시
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('식사 정보가 저장되었습니다')),
+      );
     } catch (e) {
       print('식사 저장 오류: $e');
       setState(() {
         _isLoading = false;
       });
       _showErrorDialog('식사 정보를 저장하는 중 오류가 발생했습니다: $e');
-    }
-  }
-  
-  // SharedPreferences에 식사 정보 저장
-  Future<void> _saveMealToLocalStorage(Meal meal) async {
-    try {
-      print('로컬 저장소에 식사 정보 저장 시작, ID: ${meal.id}'); // 디버그 로그
-      final prefs = await SharedPreferences.getInstance();
-      
-      // 기존 저장된 식사 목록 불러오기
-      List<Map<String, dynamic>> mealsList = [];
-      
-      try {
-        final String? mealsJson = prefs.getString('saved_meals');
-        if (mealsJson != null && mealsJson.isNotEmpty) {
-          print('기존 저장된 식사 데이터 크기: ${mealsJson.length}'); // 디버그 로그
-          final List<dynamic> decoded = jsonDecode(mealsJson);
-          mealsList = List<Map<String, dynamic>>.from(decoded);
-          print('기존 저장된 식사 수: ${mealsList.length}'); // 디버그 로그
-        } else {
-          print('저장된 식사 기록이 없어 새 리스트 생성'); // 디버그 로그
-          mealsList = [];
-        }
-      } catch (e) {
-        print('기존 저장된 식사 데이터 파싱 오류: $e');
-        // 오류 발생 시 새 목록으로 초기화
-        mealsList = [];
-      }
-      
-      // 새 식사 정보를 Map으로 변환
-      final Map<String, dynamic> mealMap = meal.toMap();
-      
-      // ID가 이미 목록에 있는지 확인 (중복 저장 방지)
-      final existingIndex = mealsList.indexWhere((existingMeal) => 
-        existingMeal['id'] != null && mealMap['id'] != null && existingMeal['id'] == mealMap['id']);
-      
-      if (existingIndex >= 0) {
-        // 기존 항목이 있으면 업데이트
-        print('기존 항목 업데이트 (ID: ${meal.id})'); // 디버그 로그
-        mealsList[existingIndex] = mealMap;
-      } else {
-        // 새 식사 정보 추가
-        print('새 식사 추가 (ID: ${meal.id})'); // 디버그 로그
-        mealsList.add(mealMap);
-      }
-      
-      // 다시 저장 (항상 새로 저장)
-      final String encodedJson = jsonEncode(mealsList);
-      await prefs.setString('saved_meals', encodedJson);
-      print('식사 정보가 로컬 저장소에 저장 완료: ${meal.name} (ID: ${meal.id})'); // 디버그 로그
-      print('로컬 저장소 전체 식사 수: ${mealsList.length}'); // 디버그 로그
-    } catch (e) {
-      print('로컬 저장소에 식사 저장 오류: $e');
-      // 에러가 발생해도 앱 실행은 계속되도록 예외를 삼킴
     }
   }
 
@@ -320,6 +247,12 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
             onPressed: _viewMealHistory,
             tooltip: '식사 기록 보기',
           ),
+          if (_recommendations.isNotEmpty && _selectedFoodNames.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.save),
+              onPressed: _isLoading ? null : _saveMeal,
+              tooltip: '선택한 음식을 저장',
+            ),
         ],
       ),
       body: _isLoading
@@ -690,12 +623,20 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                 ? TextButton.icon(
                     icon: const Icon(Icons.check_circle, color: Colors.green),
                     label: const Text('저장됨', style: TextStyle(color: Colors.green)),
-                    onPressed: null,
+                    onPressed: () {
+                      setState(() {
+                        _selectedFoodNames.remove(recommendation.name);
+                      });
+                    },
                   )
                 : TextButton.icon(
                     icon: const Icon(Icons.add_circle_outline, color: Colors.blue),
-                    label: const Text('식사로 저장'),
-                    onPressed: () => _saveMeal(recommendation.name),
+                    label: const Text('선택하기'),
+                    onPressed: () {
+                      setState(() {
+                        _selectedFoodNames.add(recommendation.name);
+                      });
+                    },
                   ),
           ),
         ],
@@ -719,6 +660,26 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
         return Colors.brown.shade300; // 동메달 색상
       default:
         return Colors.green;
+    }
+  }
+
+  // 식사 레코드 목록 업데이트
+  Future<void> _updateMealRecords() async {
+    try {
+      // 모든 식사 기록 가져오기
+      final meals = await DatabaseHelper.instance.getMeals();
+      
+      // SharedPreferences 인스턴스 가져오기
+      final prefs = await SharedPreferences.getInstance();
+      
+      // ID 목록 생성
+      final List<int> mealIds = meals.map((meal) => meal.id!).toList();
+      
+      // SharedPreferences에 저장
+      await prefs.setString('meal_records', jsonEncode(mealIds));
+      print('식사 기록 업데이트됨: ${mealIds.length}개 항목');
+    } catch (e) {
+      print('식사 기록 업데이트 중 오류: $e');
     }
   }
 } 
