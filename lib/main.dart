@@ -11,6 +11,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import 'package:provider/provider.dart';
+import 'providers/health_condition_provider.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -197,9 +200,18 @@ class SplashView extends StatelessWidget {
   }
 }
 
-void main() async {
-  // 플러터 엔진 초기화
+Future<void> main() async {
+  // 위젯 플러터 바인딩 초기화
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Google Mobile Ads SDK 초기화
+  await MobileAds.instance.initialize();
+  
+  // 앱 방향을 세로로만 설정
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
   
   // 앱 실행 전 데이터베이스 초기화
   try {
@@ -259,7 +271,13 @@ void main() async {
   // 네이티브 스플래시 화면을 즉시 제거하기 위한 설정
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   
-  runApp(const MyApp());
+  // ChangeNotifierProvider로 감싸서 HealthConditionProvider 제공
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => HealthConditionProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class HomePage extends StatelessWidget {

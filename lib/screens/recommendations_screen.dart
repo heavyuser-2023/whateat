@@ -8,6 +8,92 @@ import '../models/meal.dart';
 import '../services/food_recognition_service.dart';
 import '../database/database_helper.dart';
 import 'meal_history_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+
+class GoogleBannerAd extends StatefulWidget {
+  final String adType;
+  
+  const GoogleBannerAd({
+    Key? key,
+    this.adType = 'normal',
+  }) : super(key: key);
+
+  @override
+  State<GoogleBannerAd> createState() => _GoogleBannerAdState();
+}
+
+class _GoogleBannerAdState extends State<GoogleBannerAd> {
+  BannerAd? _bannerAd;
+  bool _isAdLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBannerAd();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
+  }
+
+  void _loadBannerAd() {
+    // 테스트 광고 ID - 실제 앱에서는 AdMob에서 발급받은 실제 ID로 변경 필요
+    final adUnitId = Platform.isAndroid
+        ? 'ca-app-pub-3940256099942544/6300978111'  // 안드로이드 테스트 ID
+        : 'ca-app-pub-3940256099942544/2934735716'; // iOS 테스트 ID
+
+    // 광고 사이즈 설정 (BANNER, LARGE_BANNER, MEDIUM_RECTANGLE, FULL_BANNER, LEADERBOARD)
+    final adSize = widget.adType == 'large' ? AdSize.mediumRectangle : AdSize.banner;
+
+    _bannerAd = BannerAd(
+      adUnitId: adUnitId,
+      size: adSize,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          print('배너 광고 로드 성공');
+          setState(() {
+            _isAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          print('배너 광고 로드 실패: ${error.message}');
+          ad.dispose();
+        },
+      ),
+    );
+
+    _bannerAd?.load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_bannerAd == null || !_isAdLoaded) {
+      return Container(
+        height: widget.adType == 'large' ? 250 : 60,
+        margin: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Center(
+          child: Text('광고 로딩 중...', style: TextStyle(color: Colors.grey)),
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      alignment: Alignment.center,
+      width: _bannerAd!.size.width.toDouble(),
+      height: _bannerAd!.size.height.toDouble(),
+      child: AdWidget(ad: _bannerAd!),
+    );
+  }
+}
 
 class RecommendationsScreen extends StatefulWidget {
   final File imageFile;
@@ -256,13 +342,16 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('메뉴 이미지 분석 중...', style: TextStyle(fontSize: 16)),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  const Text('메뉴 이미지 분석 중...', style: TextStyle(fontSize: 16)),
+                  const SizedBox(height: 24),
+                  // 로딩 중 Google AdMob 배너 광고 추가
+                  const GoogleBannerAd(),
                 ],
               ),
             )
@@ -319,7 +408,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
     
     final alternativeFoods = _recommendations.where((rec) => rec.name.toLowerCase().contains('차선책')).toList()
       ..sort((a, b) => b.compatibilityScore.compareTo(a.compatibilityScore));
-      
+    
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -377,6 +466,9 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
               ],
             ),
           ),
+          
+          // 첫 번째 Google AdMob 배너 광고 추가
+          const GoogleBannerAd(),
           
           // 다시 분석 버튼 (모든 추천이 없을 때)
           if (_recommendations.isEmpty)
@@ -461,6 +553,9 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
               },
             ),
           ],
+          
+          // 두 번째 Google AdMob 배너 광고 추가 (좀 더 큰 사이즈)
+          const GoogleBannerAd(adType: 'large'),
           
           // 차선책 음식 섹션
           if (alternativeFoods.isNotEmpty) ...[
