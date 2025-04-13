@@ -24,7 +24,7 @@ class FoodRecognitionService {
   factory FoodRecognitionService() => _instance;
   FoodRecognitionService._internal();
   
-  final String baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+  final String baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
   
   // .env 파일에서 API 키를 로드
   String get apiKey {
