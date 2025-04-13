@@ -9,6 +9,8 @@ import 'database/database_helper.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -204,6 +206,19 @@ void main() async {
     print('데이터베이스 초기화 시작');
     final db = await DatabaseHelper.instance.database;
     print('데이터베이스 초기화 완료: $db');
+    
+    // 이미지 저장용 디렉토리 생성
+    final appDir = await getApplicationDocumentsDirectory();
+    final mealImagesDir = Directory('${appDir.path}/meal_images');
+    if (!mealImagesDir.existsSync()) {
+      await mealImagesDir.create(recursive: true);
+      print('식사 이미지 디렉토리 생성: ${mealImagesDir.path}');
+    } else {
+      print('식사 이미지 디렉토리 존재 확인: ${mealImagesDir.path}');
+      // 디렉토리 내 파일 목록 확인
+      final files = mealImagesDir.listSync();
+      print('식사 이미지 디렉토리 내 파일 수: ${files.length}');
+    }
     
     // SharedPreferences 초기화 확인
     final prefs = await SharedPreferences.getInstance();

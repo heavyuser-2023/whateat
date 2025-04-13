@@ -123,13 +123,56 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
 
       print('식사 저장 시작: $foodName'); // 디버그 로그
 
-      // 이미지를 앱 저장소에 복사
-      final documentsDir = await getApplicationDocumentsDirectory();
-      final fileName = 'meal_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final savedImagePath = path_pkg.join(documentsDir.path, fileName);
+      // 앱 영구 저장소 디렉토리 가져오기
+      final appDir = await getApplicationDocumentsDirectory();
+      final mealDir = Directory('${appDir.path}/meal_images');
       
-      await widget.imageFile.copy(savedImagePath);
-      print('이미지 복사 완료: $savedImagePath'); // 디버그 로그
+      // 저장 디렉토리가 없으면 생성
+      if (!await mealDir.exists()) {
+        await mealDir.create(recursive: true);
+        print('식사 이미지 디렉토리 생성: ${mealDir.path}'); // 디버그 로그
+      }
+      
+      // 개발용 백업 디렉토리 (디버깅을 위함)
+      final tempDir = Directory('lib/temp_meal_images');
+      if (await tempDir.exists()) {
+        print('개발용 백업 디렉토리 있음: ${tempDir.path}');
+      }
+      
+      // 이미지 파일명 생성 (타임스탬프 기반)
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = 'meal_$timestamp.jpg';
+      final savedImagePath = path_pkg.join(mealDir.path, fileName);
+      
+      // 원본 이미지 파일 확인
+      print('원본 이미지 파일 경로: ${widget.imageFile.path}');
+      print('원본 이미지 파일 존재: ${await widget.imageFile.exists()}');
+      print('원본 이미지 파일 크기: ${await widget.imageFile.length()} 바이트');
+      
+      // 이미지 복사
+      final savedFile = await widget.imageFile.copy(savedImagePath);
+      print('이미지 복사됨, 새 경로: ${savedFile.path}');
+      
+      // 개발용 디버깅 파일 복사 시도 (권한이 있는 곳에 백업)
+      try {
+        if (await tempDir.exists()) {
+          final debugFilePath = path_pkg.join(tempDir.path, fileName);
+          final debugFile = await widget.imageFile.copy(debugFilePath);
+          print('백업용 디버그 이미지 저장: ${debugFile.path}');
+        }
+      } catch (e) {
+        print('디버그용 이미지 백업 실패 (무시해도 됨): $e');
+      }
+      
+      // 복사된 이미지 파일 확인
+      final exists = await savedFile.exists();
+      if (exists) {
+        final fileSize = await savedFile.length();
+        print('저장된 이미지 파일 확인 완료: $fileSize 바이트');
+      } else {
+        print('오류: 저장된 이미지 파일이 존재하지 않습니다');
+        throw Exception('이미지 파일이 저장되지 않았습니다.');
+      }
 
       // 해당 추천 항목 가져오기
       final selectedRecommendation = _recommendations.firstWhere(
@@ -141,7 +184,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
       final meal = Meal(
         name: selectedRecommendation.name,
         description: selectedRecommendation.description,
-        imagePath: savedImagePath,
+        imagePath: savedFile.path, // 절대 경로 사용
         date: now,
         healthConditions: widget.healthConditions,
       );

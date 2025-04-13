@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 class Meal {
   final int? id;
@@ -45,6 +46,27 @@ class Meal {
         date = DateTime.now(); // 기본값 사용
       }
       
+      // 이미지 경로 처리
+      String imagePath = map['imagePath'] ?? '';
+      
+      // 이미지 경로 유효성 확인
+      if (imagePath.isNotEmpty) {
+        try {
+          final file = File(imagePath);
+          final exists = file.existsSync();
+          if (!exists) {
+            print('경고: 이미지 파일 없음 - $imagePath');
+            
+            // 파일이 존재하지 않아도 앱이 중단되지 않도록 경로는 그대로 유지
+            // 화면에서 이미지 로드 시 플레이스홀더를 표시할 수 있도록 함
+          }
+        } catch (e) {
+          print('이미지 파일 확인 중 오류 발생: $e');
+        }
+      } else {
+        print('경고: 이미지 경로가 비어 있음');
+      }
+      
       // 건강 조건 목록 처리
       List<String> healthConditions = [];
       try {
@@ -63,7 +85,7 @@ class Meal {
         id: id,
         name: map['name'] ?? '알 수 없는 식사',
         description: map['description'] ?? '',
-        imagePath: map['imagePath'] ?? '',
+        imagePath: imagePath,
         date: date,
         healthConditions: healthConditions,
       );

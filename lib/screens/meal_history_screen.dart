@@ -349,35 +349,62 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> with WidgetsBindi
   }
 
   Widget _buildMealCard(Meal meal) {
-    final dateFormat = DateFormat('yyyy년 MM월 dd일 HH:mm');
+    // 이미지 파일 존재 확인
+    bool imageExists = false;
+    if (meal.imagePath.isNotEmpty) {
+      try {
+        final file = File(meal.imagePath);
+        imageExists = file.existsSync();
+        if (!imageExists) {
+          print('이미지 파일을 찾을 수 없음: ${meal.imagePath}');
+        }
+      } catch (e) {
+        print('이미지 파일 확인 오류: $e');
+      }
+    }
     
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       elevation: 4,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // 이미지 영역
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            child: Container(
+              height: 180,
+              child: imageExists
+                ? Image.file(
+                    File(meal.imagePath),
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      print('이미지 로드 오류: $error');
+                      return Container(
+                        color: Colors.grey.shade200,
+                        child: const Center(
+                          child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
+                        ),
+                      );
+                    },
+                  )
+                : Container(
+                    color: Colors.grey.shade200,
+                    child: const Center(
+                      child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
+                    ),
+                  ),
+            ),
+          ),
           ListTile(
             title: Text(meal.name),
-            subtitle: Text(dateFormat.format(meal.date)),
+            subtitle: Text(DateFormat('yyyy년 MM월 dd일 HH:mm').format(meal.date)),
             trailing: IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
               onPressed: () => _confirmDelete(meal),
             ),
           ),
-          if (File(meal.imagePath).existsSync())
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8.0),
-                child: Image.file(
-                  File(meal.imagePath),
-                  height: 200,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
