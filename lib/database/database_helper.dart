@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/health_condition.dart';
 import '../models/meal.dart';
+import 'dart:io';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -120,7 +121,33 @@ class DatabaseHelper {
   Future<List<HealthCondition>> getHealthConditions() async {
     final db = await instance.database;
     final result = await db.query('health_conditions');
+    
+    // 건강 상태 데이터가 비어있으면 기본 데이터 삽입
+    if (result.isEmpty) {
+      print('건강 상태 테이블이 비어있어 기본 데이터를 삽입합니다.');
+      await _resetHealthConditions(db);
+      return await db.query('health_conditions').then(
+        (data) => data.map((json) => HealthCondition.fromMap(json)).toList()
+      );
+    }
+    
     return result.map((json) => HealthCondition.fromMap(json)).toList();
+  }
+  
+  // 건강 상태 테이블 초기화
+  Future<void> _resetHealthConditions(Database db) async {
+    try {
+      // 기존 데이터 삭제
+      await db.delete('health_conditions');
+      
+      // 기본 건강 조건 삽입
+      for (var condition in defaultHealthConditions) {
+        await db.insert('health_conditions', condition.toMap());
+      }
+      print('건강 상태 기본 데이터 ${defaultHealthConditions.length}개 삽입 완료');
+    } catch (e) {
+      print('건강 상태 초기화 오류: $e');
+    }
   }
 
   Future<void> updateHealthCondition(HealthCondition condition) async {
@@ -135,38 +162,112 @@ class DatabaseHelper {
 
   // 식사 관련 메서드
   Future<int> insertMeal(Meal meal) async {
-    final db = await instance.database;
-    return await db.insert('meals', meal.toMap());
+    try {
+      print('데이터베이스 식사 정보 저장 시작: ${meal.name}'); // 디버그 로그
+      final db = await instance.database;
+      final mealMap = meal.toMap();
+      
+      // id 필드가 null이 아니면 ID 필드를 제거 (자동 증가 필드가 작동하도록)
+      if (mealMap.containsKey('id') && mealMap['id'] == null) {
+        mealMap.remove('id');
+      }
+      
+      final id = await db.insert('meals', mealMap);
+      print('데이터베이스 식사 저장 완료, ID: $id'); // 디버그 로그
+      return id;
+    } catch (e) {
+      print('데이터베이스 식사 저장 오류: $e'); // 디버그 로그
+      return -1; // 오류 발생 시 -1 반환
+    }
   }
 
   Future<List<Meal>> getMeals() async {
-    final db = await instance.database;
-    final result = await db.query('meals', orderBy: 'date DESC');
-    return result.map((json) => Meal.fromMap(json)).toList();
+    try {
+      print('데이터베이스에서 모든 식사 정보 불러오기 시작'); // 디버그 로그
+      final db = await instance.database;
+      final result = await db.query('meals', orderBy: 'date DESC');
+      print('데이터베이스에서 불러온 식사 수: ${result.length}'); // 디버그 로그
+      
+      final meals = result.map((json) {
+        try {
+          return Meal.fromMap(json);
+        } catch (e) {
+          print('개별 식사 레코드 변환 오류: $e');
+          return null;
+        }
+      }).whereType<Meal>().toList(); // null 값 필터링
+      
+      print('변환된 식사 객체 수: ${meals.length}'); // 디버그 로그
+      return meals;
+    } catch (e) {
+      print('모든 식사 불러오기 오류: $e'); // 디버그 로그
+      return []; // 오류 발생 시 빈 목록 반환
+    }
   }
 
   Future<Meal?> getMeal(int id) async {
-    final db = await instance.database;
-    final maps = await db.query(
-      'meals',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    try {
+      print('데이터베이스에서 식사 정보 조회, ID: $id'); // 디버그 로그
+      final db = await instance.database;
+      final maps = await db.query(
+        'meals',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
 
-    if (maps.isNotEmpty) {
-      return Meal.fromMap(maps.first);
-    } else {
+      if (maps.isNotEmpty) {
+        try {
+          return Meal.fromMap(maps.first);
+        } catch (e) {
+          print('식사 정보 변환 오류, ID: $id, 오류: $e');
+          return null;
+        }
+      } else {
+        print('ID가 $id인 식사 정보 없음');
+        return null;
+      }
+    } catch (e) {
+      print('식사 정보 조회 오류, ID: $id, 오류: $e');
       return null;
     }
   }
 
   Future<void> deleteMeal(int id) async {
-    final db = await instance.database;
-    await db.delete(
-      'meals',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    try {
+      print('데이터베이스에서 식사 정보 삭제 시작, ID: $id'); // 디버그 로그
+      final db = await instance.database;
+      
+      // 식사 정보 조회 (삭제 전 이미지 파일 확인을 위해)
+      final mealToDelete = await getMeal(id);
+      
+      // 데이터베이스에서 삭제
+      final deletedCount = await db.delete(
+        'meals',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      
+      print('데이터베이스에서 삭제된 식사 수: $deletedCount, ID: $id'); // 디버그 로그
+      
+      // 연결된 이미지 파일도 삭제 시도
+      if (mealToDelete != null && mealToDelete.imagePath.isNotEmpty) {
+        try {
+          final imageFile = File(mealToDelete.imagePath);
+          if (await imageFile.exists()) {
+            await imageFile.delete();
+            print('식사 이미지 파일 삭제 완료: ${mealToDelete.imagePath}');
+          } else {
+            print('삭제할 이미지 파일이 존재하지 않음: ${mealToDelete.imagePath}');
+          }
+        } catch (e) {
+          print('이미지 파일 삭제 오류: $e');
+          // 데이터베이스 작업은 성공했으므로 예외를 삼킴
+        }
+      }
+    } catch (e) {
+      print('식사 정보 삭제 오류, ID: $id, 오류: $e');
+      throw Exception('식사 정보 삭제 중 오류가 발생했습니다: $e');
+    }
   }
 
   Future close() async {

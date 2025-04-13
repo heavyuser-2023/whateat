@@ -7,66 +7,236 @@ import '../database/database_helper.dart';
 import '../models/meal.dart';
 
 class MealHistoryScreen extends StatefulWidget {
-  const MealHistoryScreen({Key? key}) : super(key: key);
+  final bool refreshOnShow;
+  
+  const MealHistoryScreen({
+    Key? key, 
+    this.refreshOnShow = false,
+  }) : super(key: key);
 
   @override
   _MealHistoryScreenState createState() => _MealHistoryScreenState();
 }
 
-class _MealHistoryScreenState extends State<MealHistoryScreen> {
+class _MealHistoryScreenState extends State<MealHistoryScreen> with WidgetsBindingObserver {
   List<Meal> _meals = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadMealHistory();
+    WidgetsBinding.instance.addObserver(this);
+    print('MealHistoryScreen - initState 호출'); // 디버그 로그
+    
+    // 초기 로딩 상태 설정
+    _isLoading = true;
+    
+    // 화면이 완전히 로드된 후 데이터 로드
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('MealHistoryScreen - 화면 로드 완료, 데이터 불러오기 시작');
+      _loadMealHistory();
+    });
+  }
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 로드가 실패했을 때를 대비해 여기서도 로드 시도
+    if (_meals.isEmpty && !_isLoading) {
+      print('MealHistoryScreen - 식사 기록이 비어있어 다시 불러오기 시도');
+      _loadMealHistory();
+    }
+  }
+  
+  @override
+  void didUpdateWidget(MealHistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 위젯이 업데이트될 때 최신 데이터 로드
+    if (widget.refreshOnShow) {
+      print('MealHistoryScreen - didUpdateWidget: refreshOnShow=true'); // 디버그 로그
+      // 상태 초기화 후 데이터 로드
+      setState(() {
+        _isLoading = true;
+      });
+      _loadMealHistory();
+    }
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // 앱이 다시 활성화될 때 데이터 새로고침
+    if (state == AppLifecycleState.resumed) {
+      print('MealHistoryScreen - 앱 활성화 감지: 데이터 새로고침'); // 디버그 로그
+      _loadMealHistory();
+    }
+  }
+  
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   Future<void> _loadMealHistory() async {
+    // 필요 시 로딩 중복 실행 허용 (첫 로딩이 실패할 경우)
+    if (_isLoading) {
+      print('이미 로딩 중이지만 계속 진행합니다.'); // 디버그 로그
+    }
+    
     try {
       setState(() => _isLoading = true);
+      print('식사 기록 불러오기 시작 - ${DateTime.now()}'); // 디버그 로그
       
+      // 먼저 이전 목록 초기화
       List<Meal> allMeals = [];
+      Set<int> loadedIds = {}; // 이미 로드된 ID를 추적
       
       // 1. SQLite에서 식사 기록 불러오기
-      final dbMeals = await DatabaseHelper.instance.getMeals();
-      allMeals.addAll(dbMeals);
+      try {
+        final dbMeals = await DatabaseHelper.instance.getMeals();
+        print('SQLite에서 불러온 식사 기록 수: ${dbMeals.length}'); // 디버그 로그
+        
+        for (final meal in dbMeals) {
+          if (meal.id != null) {
+            loadedIds.add(meal.id!);
+            allMeals.add(meal);
+          } else {
+            print('경고: SQLite에서 ID가 없는 식사 기록 발견'); // 디버그 로그
+            allMeals.add(meal);
+          }
+        }
+      } catch (e) {
+        print('SQLite 식사 기록 불러오기 오류: $e'); // 디버그 로그
+      }
       
       // 2. SharedPreferences에서 식사 기록 불러오기
-      final prefs = await SharedPreferences.getInstance();
-      final String? mealsJson = prefs.getString('saved_meals');
-      
-      if (mealsJson != null) {
-        try {
-          final List<dynamic> mealsList = jsonDecode(mealsJson);
-          final localMeals = mealsList.map((map) => Meal.fromMap(map as Map<String, dynamic>)).toList();
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final String? mealsJson = prefs.getString('saved_meals');
+        
+        if (mealsJson != null && mealsJson.isNotEmpty) {
+          print('SharedPreferences 데이터 크기: ${mealsJson.length}'); // 디버그 로그
           
-          // SharedPreferences에서 불러온 식사 중 데이터베이스에 없는 것만 추가
-          // (ID로 비교)
-          for (final localMeal in localMeals) {
-            if (localMeal.id != null && !dbMeals.any((m) => m.id == localMeal.id)) {
-              allMeals.add(localMeal);
+          try {
+            final List<dynamic> mealsList = jsonDecode(mealsJson);
+            print('SharedPreferences 파싱된 식사 수: ${mealsList.length}'); // 디버그 로그
+            
+            // 저장된 모든 식사 기록 출력 (디버깅용)
+            for (int i = 0; i < mealsList.length; i++) {
+              try {
+                final meal = mealsList[i];
+                print('SharedPreferences 식사 #$i - ID: ${meal['id'] ?? 'null'}, 이름: ${meal['name'] ?? 'unknown'}');
+              } catch (e) {
+                print('식사 항목 #$i 정보 출력 오류: $e');
+              }
             }
+            
+            if (mealsList.isNotEmpty) {
+              final localMeals = mealsList.map((map) {
+                try {
+                  return Meal.fromMap(map as Map<String, dynamic>);
+                } catch (e) {
+                  print('개별 식사 항목 파싱 오류: $e');
+                  return null;
+                }
+              }).whereType<Meal>().toList(); // null 값 필터링
+              
+              print('변환된 로컬 식사 기록 수: ${localMeals.length}'); // 디버그 로그
+              
+              // 중복되지 않는 식사 기록만 추가 (ID 기준)
+              for (final localMeal in localMeals) {
+                // ID가 있고 이미 로드된 ID 목록에 있는 경우 건너뜀
+                if (localMeal.id != null && loadedIds.contains(localMeal.id)) {
+                  print('중복 식사 ID 발견: ${localMeal.id}'); // 디버그 로그
+                  continue;
+                }
+                
+                // 새로운 기록 추가
+                allMeals.add(localMeal);
+                print('로컬 저장소에서 식사 추가: ${localMeal.name} (ID: ${localMeal.id})'); // 디버그 로그
+                
+                // ID가 있는 경우 로드된 ID 목록에 추가
+                if (localMeal.id != null) {
+                  loadedIds.add(localMeal.id!);
+                }
+              }
+            }
+          } catch (e) {
+            print('로컬 저장 식사 기록 파싱 오류: $e');
           }
-        } catch (e) {
-          print('로컬 저장 식사 기록 파싱 오류: $e');
+        } else {
+          print('SharedPreferences에 저장된 식사 기록 없음'); // 디버그 로그
         }
+      } catch (e) {
+        print('SharedPreferences 접근 오류: $e');
       }
       
       // 날짜 기준 정렬 (최신순)
       allMeals.sort((a, b) => b.date.compareTo(a.date));
+      print('정렬 전 전체 식사 수: ${allMeals.length}'); // 디버그 로그
       
-      setState(() {
-        _meals = allMeals;
-        _isLoading = false;
-      });
+      // 중복 제거 한번 더 확인 (ID 기준)
+      final uniqueMeals = <Meal>[];
+      final uniqueIds = <int?>{};
+      
+      for (final meal in allMeals) {
+        if (meal.id == null || !uniqueIds.contains(meal.id)) {
+          uniqueMeals.add(meal);
+          if (meal.id != null) {
+            uniqueIds.add(meal.id);
+          }
+        }
+      }
+      
+      print('고유 ID 수: ${uniqueIds.length}, 고유 식사 수: ${uniqueMeals.length}'); // 디버그 로그
+      
+      // 모든 식사의 ID 목록 출력 (디버깅용)
+      String idList = 'ID 목록: ';
+      for (final id in uniqueIds) {
+        idList += '${id ?? 'null'}, ';
+      }
+      print(idList); // 디버그 로그
+      
+      // 화면 갱신
+      if (mounted) {
+        setState(() {
+          _meals = uniqueMeals;
+          _isLoading = false;
+        });
+      }
+      
+      print('최종 불러온 식사 기록 수: ${uniqueMeals.length} - ${DateTime.now()}'); // 디버그 로그
+      
+      // 이미지 파일 존재 여부 확인
+      _checkImageExistence();
+      
+      // 데이터가 없으면 기본 메시지 설정
+      if (_meals.isEmpty && mounted) {
+        setState(() {
+          _meals = [];
+          _isLoading = false;
+        });
+      }
+      
     } catch (e) {
       print('식사 기록 불러오기 오류: $e');
-      setState(() {
-        _isLoading = false;
-      });
-      _showErrorDialog('식사 기록을 불러오는 중 오류가 발생했습니다.');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        _showErrorDialog('식사 기록을 불러오는 중 오류가 발생했습니다: $e');
+      }
+    }
+  }
+  
+  // 이미지 파일 존재 여부 확인
+  void _checkImageExistence() {
+    for (final meal in _meals) {
+      final file = File(meal.imagePath);
+      final exists = file.existsSync();
+      if (!exists) {
+        print('경고: 이미지 파일 없음 - ${meal.imagePath}'); // 디버그 로그
+      }
     }
   }
 
@@ -88,8 +258,11 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> {
 
   Future<void> _deleteMeal(int id) async {
     try {
+      print('식사 기록 삭제 시작, ID: $id'); // 디버그 로그
+      
       // SQLite에서 삭제
       await DatabaseHelper.instance.deleteMeal(id);
+      print('SQLite에서 식사 기록 삭제 완료, ID: $id'); // 디버그 로그
       
       // SharedPreferences에서도 삭제
       await _deleteMealFromLocalStorage(id);
@@ -107,21 +280,35 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> {
   // SharedPreferences에서 식사 기록 삭제
   Future<void> _deleteMealFromLocalStorage(int id) async {
     try {
+      print('로컬 저장소에서 식사 삭제 시작, ID: $id'); // 디버그 로그
       final prefs = await SharedPreferences.getInstance();
       final String? mealsJson = prefs.getString('saved_meals');
       
-      if (mealsJson != null) {
-        final List<dynamic> mealsList = jsonDecode(mealsJson);
-        
-        // 해당 ID를 가진 식사 제외
-        final filteredMeals = mealsList.where((meal) {
-          final Map<String, dynamic> mealMap = meal as Map<String, dynamic>;
-          return mealMap['id'] != id;
-        }).toList();
-        
-        // 다시 저장
-        await prefs.setString('saved_meals', jsonEncode(filteredMeals));
-        print('식사 기록이 로컬 저장소에서 삭제되었습니다: ID $id');
+      if (mealsJson != null && mealsJson.isNotEmpty) {
+        try {
+          final List<dynamic> mealsList = jsonDecode(mealsJson);
+          print('로컬 저장소 기존 식사 수: ${mealsList.length}'); // 디버그 로그
+          
+          // 해당 ID를 가진 식사 제외
+          final filteredMeals = mealsList.where((meal) {
+            try {
+              final Map<String, dynamic> mealMap = meal as Map<String, dynamic>;
+              return mealMap['id'] != id;
+            } catch (e) {
+              print('식사 항목 파싱 오류 (삭제 중): $e');
+              return true; // 오류 발생 시 해당 항목 유지
+            }
+          }).toList();
+          
+          // 다시 저장
+          await prefs.setString('saved_meals', jsonEncode(filteredMeals));
+          print('로컬 저장소에서 식사 기록 삭제 완료, ID: $id');
+          print('로컬 저장소 남은 식사 수: ${filteredMeals.length}'); // 디버그 로그
+        } catch (e) {
+          print('로컬 저장소 데이터 파싱 오류 (삭제 중): $e');
+        }
+      } else {
+        print('로컬 저장소에 저장된 식사 기록 없음'); // 디버그 로그
       }
     } catch (e) {
       print('로컬 저장소에서 식사 삭제 오류: $e');

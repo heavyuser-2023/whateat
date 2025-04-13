@@ -7,6 +7,8 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'database/database_helper.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -29,7 +31,7 @@ class _MyAppState extends State<MyApp> {
     await _resetDatabaseIfNeeded();
     
     // 2초 후 스플래시 화면 종료
-    Timer(const Duration(seconds: 2), () {
+    Timer(const Duration(seconds: 1), () {
       setState(() {
         _showSplash = false;
       });
@@ -45,16 +47,19 @@ class _MyAppState extends State<MyApp> {
       final dbPath = await getDatabasesPath();
       final path = join(dbPath, 'what_eat.db');
       
-      // 데이터베이스가 존재하는지 확인
-      if (await databaseExists(path)) {
-        // 기존 데이터베이스 삭제
-        await deleteDatabase(path);
-        print('기존 데이터베이스 삭제됨');
-      }
+      // 데이터베이스 존재 여부 확인
+      final bool exists = await databaseExists(path);
       
-      // DatabaseHelper를 통해 새로운 데이터베이스 초기화
-      await DatabaseHelper.instance.database;
-      print('새로운 데이터베이스 생성됨');
+      if (!exists) {
+        // 데이터베이스가 존재하지 않는 경우에만 새로 생성
+        print('데이터베이스가 존재하지 않아 새로 생성합니다.');
+        await DatabaseHelper.instance.database;
+        print('새로운 데이터베이스 생성됨');
+      } else {
+        print('기존 데이터베이스가 존재합니다. 초기화 작업을 건너뜁니다.');
+        // 데이터베이스 연결만 확인
+        await DatabaseHelper.instance.database;
+      }
     } catch (e) {
       print('데이터베이스 초기화 오류: $e');
     }
@@ -191,7 +196,36 @@ class SplashView extends StatelessWidget {
 }
 
 void main() async {
+  // 플러터 엔진 초기화
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 앱 실행 전 데이터베이스 초기화
+  try {
+    print('데이터베이스 초기화 시작');
+    final db = await DatabaseHelper.instance.database;
+    print('데이터베이스 초기화 완료: $db');
+    
+    // SharedPreferences 초기화 확인
+    final prefs = await SharedPreferences.getInstance();
+    final meals = prefs.getString('saved_meals');
+    if (meals != null) {
+      print('SharedPreferences에 저장된 식사 기록 발견: ${meals.length} 바이트');
+      
+      // 식사 기록이 유효한 JSON인지 확인
+      try {
+        final List<dynamic> mealsList = jsonDecode(meals);
+        print('저장된 식사 기록 수: ${mealsList.length}개');
+      } catch (e) {
+        print('저장된 식사 기록 형식이 잘못됨, 초기화 진행: $e');
+        await prefs.setString('saved_meals', '[]');
+      }
+    } else {
+      print('SharedPreferences에 저장된 식사 기록 없음, 기본값 설정');
+      await prefs.setString('saved_meals', '[]');
+    }
+  } catch (e) {
+    print('앱 초기화 중 오류 발생: $e');
+  }
   
   // .env 파일 로드 및 확인
   try {

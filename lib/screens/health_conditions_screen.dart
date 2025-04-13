@@ -22,27 +22,42 @@ class _HealthConditionsScreenState extends State<HealthConditionsScreen> {
   }
 
   Future<void> _loadHealthConditions() async {
+    setState(() => _isLoading = true);
+    
     try {
       final conditions = await DatabaseHelper.instance.getHealthConditions();
       
-      // SharedPreferences에서 저장된 선택 상태 불러오기
-      final prefs = await SharedPreferences.getInstance();
-      final savedSelections = prefs.getStringList('selectedHealthConditions') ?? [];
-      
-      // 저장된 선택 상태 적용
-      for (var condition in conditions) {
-        if (savedSelections.contains(condition.id.toString())) {
-          condition.isSelected = true;
+      if (conditions.isEmpty) {
+        print('경고: 데이터베이스에서 건강 상태를 불러올 수 없습니다.');
+        // 기본 건강 상태 목록 직접 사용
+        _healthConditions.clear();
+        _healthConditions.addAll(defaultHealthConditions);
+      } else {
+        // SharedPreferences에서 저장된 선택 상태 불러오기
+        final prefs = await SharedPreferences.getInstance();
+        final savedSelections = prefs.getStringList('selectedHealthConditions') ?? [];
+        
+        // 저장된 선택 상태 적용
+        for (var condition in conditions) {
+          if (savedSelections.contains(condition.id.toString())) {
+            condition.isSelected = true;
+          }
         }
-      }
-      
-      setState(() {
+        
         _healthConditions.clear();
         _healthConditions.addAll(conditions);
-        _isLoading = false;
-      });
+      }
+      
+      print('불러온 건강 상태 개수: ${_healthConditions.length}');
     } catch (e) {
       print('건강 상태 불러오기 오류: $e');
+      
+      // 오류 발생 시에도 기본 건강 상태 목록 직접 사용
+      _healthConditions.clear();
+      _healthConditions.addAll(defaultHealthConditions);
+      print('오류 발생으로 기본 건강 상태 목록을 사용합니다.');
+    } finally {
+      // UI 업데이트
       setState(() {
         _isLoading = false;
       });
