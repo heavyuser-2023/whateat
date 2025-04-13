@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/meal.dart';
+import 'dart:ui' as ui;
 
 class FoodAnalysisResult {
   final String recognizedFood;
@@ -25,6 +26,30 @@ class FoodRecognitionService {
   FoodRecognitionService._internal();
   
   final String baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+  
+  // 현재 앱의 언어 코드를 가져오는 메서드
+  String get currentLanguageCode {
+    // 기기의 현재 로케일 언어 코드 가져오기
+    final String deviceLocale = ui.window.locale.languageCode;
+    print('감지된 기기 언어 코드: $deviceLocale');
+    return deviceLocale;
+  }
+  
+  // 언어 코드에 따른 프롬프트 지시문 생성
+  String getLanguageInstruction(String languageCode) {
+    switch (languageCode) {
+      case 'ko':
+        return "반드시 한국어로 응답해주세요.";
+      case 'en':
+        return "Please respond in English.";
+      case 'ja':
+        return "必ず日本語で回答してください。";
+      case 'zh':
+        return "请用中文回答。";
+      default:
+        return "Please respond in $languageCode.";
+    }
+  }
   
   // .env 파일에서 API 키를 로드
   String get apiKey {
@@ -57,6 +82,9 @@ class FoodRecognitionService {
     List<String> healthConditions,
   ) async {
     try {
+      // 현재 언어 코드 가져오기
+      final String langCode = currentLanguageCode;
+      
       // 이미지를 base64로 인코딩
       final bytes = await imageFile.readAsBytes();
       final base64Image = base64Encode(bytes);
@@ -78,6 +106,7 @@ class FoodRecognitionService {
       promptText += " 2. 차선책 음식: 건강에 완벽하게 좋지는 않지만, 메뉴 내에서 상대적으로 덜 해로운 음식을 최대 3가지 선택하여 '차선책: ' 접두어를 붙여 추천 목록에 함께 추가해주세요.";
       promptText += " 두 카테고리 모두 메뉴에 있는 실제 음식 이름을 사용해야 합니다. 일반적인 조언이 아닌 실제 메뉴 항목만 추천해주세요.";
       promptText += " 만약 메뉴에서 건강에 좋은 음식이 전혀 없다면, 차선책만 제공해주세요.";
+      promptText += " ${getLanguageInstruction(langCode)}";
       promptText += " JSON 형식으로 응답해주세요: {\"recognized_food\": \"인식된 메뉴 이름\", \"evaluation\": \"건강 상태에 대한 평가\", \"recommendations\": [{\"name\": \"메뉴에서 추천하는 음식 이름\", \"description\": \"추천 이유\", \"compatibilityScore\": 0.95}, ...]}";
       
       print('최종 프롬프트: $promptText'); // 디버그 로그
@@ -127,7 +156,7 @@ class FoodRecognitionService {
       });
 
       // 실제 API 호출
-      print('API 호출 URL: $apiUrl'); // 디버깅용 로그
+      print('API 호출 URL: $apiUrl (요청 언어: $langCode)'); // 디버깅용 로그
       
       final response = await http.post(
         Uri.parse(apiUrl),
@@ -148,7 +177,7 @@ class FoodRecognitionService {
         print('API 호출 실패: ${response.statusCode} - ${response.body}');
         print('API URL: $baseUrl');
         print('사용된 API 키 길이: ${apiKey.length}자');
-        print('사용된 모델: gemini-1.5-flash');
+        print('사용된 모델: gemini-2.0-flash');
         
         // 자세한 오류 정보 추출 시도
         try {
