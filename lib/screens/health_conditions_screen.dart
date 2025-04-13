@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../database/database_helper.dart';
 import '../models/health_condition.dart';
 import 'camera_screen.dart';
@@ -23,6 +24,18 @@ class _HealthConditionsScreenState extends State<HealthConditionsScreen> {
   Future<void> _loadHealthConditions() async {
     try {
       final conditions = await DatabaseHelper.instance.getHealthConditions();
+      
+      // SharedPreferences에서 저장된 선택 상태 불러오기
+      final prefs = await SharedPreferences.getInstance();
+      final savedSelections = prefs.getStringList('selectedHealthConditions') ?? [];
+      
+      // 저장된 선택 상태 적용
+      for (var condition in conditions) {
+        if (savedSelections.contains(condition.id.toString())) {
+          condition.isSelected = true;
+        }
+      }
+      
       setState(() {
         _healthConditions.clear();
         _healthConditions.addAll(conditions);
@@ -33,6 +46,22 @@ class _HealthConditionsScreenState extends State<HealthConditionsScreen> {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+  
+  // 건강 상태 선택 내용 저장
+  Future<void> _saveSelectedConditions() async {
+    try {
+      final selectedIds = _healthConditions
+          .where((condition) => condition.isSelected)
+          .map((condition) => condition.id.toString())
+          .toList();
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('selectedHealthConditions', selectedIds);
+      print('선택한 건강 상태가 로컬에 저장되었습니다: $selectedIds');
+    } catch (e) {
+      print('건강 상태 저장 오류: $e');
     }
   }
 
@@ -208,7 +237,7 @@ class _HealthConditionsScreenState extends State<HealthConditionsScreen> {
                           ],
                         ),
                         child: ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
                             final selectedConditions = _healthConditions
                                 .where((condition) => condition.isSelected)
                                 .toList();
@@ -230,6 +259,9 @@ class _HealthConditionsScreenState extends State<HealthConditionsScreen> {
                               );
                               return;
                             }
+                            
+                            // 선택 상태 저장
+                            await _saveSelectedConditions();
                             
                             Navigator.push(
                               context,
@@ -340,6 +372,9 @@ class _HealthConditionsScreenState extends State<HealthConditionsScreen> {
               _healthConditions[index] = updatedCondition;
             }
           });
+          
+          // 선택 상태 변경 시 로컬에 저장
+          await _saveSelectedConditions();
         },
       ),
     );

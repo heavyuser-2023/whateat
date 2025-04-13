@@ -38,6 +38,24 @@ class Meal {
       healthConditions: List<String>.from(jsonDecode(map['healthConditions'])),
     );
   }
+
+  Meal copyWith({
+    int? id,
+    String? name,
+    String? description,
+    String? imagePath,
+    DateTime? date,
+    List<String>? healthConditions,
+  }) {
+    return Meal(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      imagePath: imagePath ?? this.imagePath,
+      date: date ?? this.date,
+      healthConditions: healthConditions ?? this.healthConditions,
+    );
+  }
 }
 
 class FoodRecommendation {

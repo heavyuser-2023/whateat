@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path_pkg;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../models/meal.dart';
 import '../services/food_recognition_service.dart';
 import '../database/database_helper.dart';
@@ -140,7 +142,11 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
         healthConditions: widget.healthConditions,
       );
 
-      await DatabaseHelper.instance.insertMeal(meal);
+      // SQLite에 저장
+      final mealId = await DatabaseHelper.instance.insertMeal(meal);
+      
+      // SharedPreferences에도 저장
+      await _saveMealToLocalStorage(meal.copyWith(id: mealId));
 
       setState(() {
         _isLoading = false;
@@ -157,6 +163,31 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
         _isLoading = false;
       });
       _showErrorDialog('식사 정보를 저장하는 중 오류가 발생했습니다.');
+    }
+  }
+  
+  // SharedPreferences에 식사 정보 저장
+  Future<void> _saveMealToLocalStorage(Meal meal) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // 기존 저장된 식사 목록 불러오기
+      final String? mealsJson = prefs.getString('saved_meals');
+      List<Map<String, dynamic>> mealsList = [];
+      
+      if (mealsJson != null) {
+        mealsList = List<Map<String, dynamic>>.from(jsonDecode(mealsJson));
+      }
+      
+      // 새 식사 정보 추가
+      mealsList.add(meal.toMap());
+      
+      // 다시 저장
+      await prefs.setString('saved_meals', jsonEncode(mealsList));
+      print('식사 정보가 로컬 저장소에 저장되었습니다: ${meal.name}');
+    } catch (e) {
+      print('로컬 저장소에 식사 저장 오류: $e');
+      // 에러가 발생해도 앱 실행은 계속되도록 예외를 삼킴
     }
   }
 

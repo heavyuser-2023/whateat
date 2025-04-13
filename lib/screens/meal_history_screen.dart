@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../database/database_helper.dart';
 import '../models/meal.dart';
 
@@ -23,9 +25,40 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> {
 
   Future<void> _loadMealHistory() async {
     try {
-      final meals = await DatabaseHelper.instance.getMeals();
+      setState(() => _isLoading = true);
+      
+      List<Meal> allMeals = [];
+      
+      // 1. SQLite에서 식사 기록 불러오기
+      final dbMeals = await DatabaseHelper.instance.getMeals();
+      allMeals.addAll(dbMeals);
+      
+      // 2. SharedPreferences에서 식사 기록 불러오기
+      final prefs = await SharedPreferences.getInstance();
+      final String? mealsJson = prefs.getString('saved_meals');
+      
+      if (mealsJson != null) {
+        try {
+          final List<dynamic> mealsList = jsonDecode(mealsJson);
+          final localMeals = mealsList.map((map) => Meal.fromMap(map as Map<String, dynamic>)).toList();
+          
+          // SharedPreferences에서 불러온 식사 중 데이터베이스에 없는 것만 추가
+          // (ID로 비교)
+          for (final localMeal in localMeals) {
+            if (localMeal.id != null && !dbMeals.any((m) => m.id == localMeal.id)) {
+              allMeals.add(localMeal);
+            }
+          }
+        } catch (e) {
+          print('로컬 저장 식사 기록 파싱 오류: $e');
+        }
+      }
+      
+      // 날짜 기준 정렬 (최신순)
+      allMeals.sort((a, b) => b.date.compareTo(a.date));
+      
       setState(() {
-        _meals = meals;
+        _meals = allMeals;
         _isLoading = false;
       });
     } catch (e) {
@@ -55,7 +88,12 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> {
 
   Future<void> _deleteMeal(int id) async {
     try {
+      // SQLite에서 삭제
       await DatabaseHelper.instance.deleteMeal(id);
+      
+      // SharedPreferences에서도 삭제
+      await _deleteMealFromLocalStorage(id);
+      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('식사 기록이 삭제되었습니다')),
       );
@@ -65,13 +103,44 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> {
       _showErrorDialog('식사 기록을 삭제하는 중 오류가 발생했습니다.');
     }
   }
+  
+  // SharedPreferences에서 식사 기록 삭제
+  Future<void> _deleteMealFromLocalStorage(int id) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? mealsJson = prefs.getString('saved_meals');
+      
+      if (mealsJson != null) {
+        final List<dynamic> mealsList = jsonDecode(mealsJson);
+        
+        // 해당 ID를 가진 식사 제외
+        final filteredMeals = mealsList.where((meal) {
+          final Map<String, dynamic> mealMap = meal as Map<String, dynamic>;
+          return mealMap['id'] != id;
+        }).toList();
+        
+        // 다시 저장
+        await prefs.setString('saved_meals', jsonEncode(filteredMeals));
+        print('식사 기록이 로컬 저장소에서 삭제되었습니다: ID $id');
+      }
+    } catch (e) {
+      print('로컬 저장소에서 식사 삭제 오류: $e');
+      // 에러가 발생해도 앱 실행은 계속되도록 예외를 삼킴
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('식사 기록'),
-        backgroundColor: Colors.green,
+        title: const Text(
+          '식사 기록',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.green.shade700,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
