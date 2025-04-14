@@ -8,7 +8,7 @@
 PRODUCT_NAME = what_eat
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.whateat
+PRODUCT_BUNDLE_IDENTIFIER = com.heavyuser.whateat
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2025 com.example. All rights reserved.

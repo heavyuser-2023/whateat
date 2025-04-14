@@ -479,7 +479,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.whateat.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.heavyuser.whateat.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/what_eat.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/what_eat";
@@ -494,7 +494,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.whateat.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.heavyuser.whateat.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/what_eat.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/what_eat";
@@ -509,7 +509,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.whateat.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.heavyuser.whateat.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/what_eat.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/what_eat";
