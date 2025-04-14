@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -85,9 +85,39 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		118CC5A62DAAB0540075E07A /* 왓이트 */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "왓이트"; sourceTree = "<group>"; };
-		118CC5B42DAAB0550075E07A /* 왓이트Tests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "왓이트Tests"; sourceTree = "<group>"; };
-		118CC5BE2DAAB0550075E07A /* 왓이트UITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "왓이트UITests"; sourceTree = "<group>"; };
+		118CC5A62DAAB0540075E07A /* 왓이트 */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "왓이트";
+			sourceTree = "<group>";
+		};
+		118CC5B42DAAB0550075E07A /* 왓이트Tests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "왓이트Tests";
+			sourceTree = "<group>";
+		};
+		118CC5BE2DAAB0550075E07A /* 왓이트UITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "왓이트UITests";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -177,9 +207,9 @@
 			children = (
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
-				118CC5A62DAAB0540075E07A /* 왓이트 */,
-				118CC5B42DAAB0550075E07A /* 왓이트Tests */,
-				118CC5BE2DAAB0550075E07A /* 왓이트UITests */,
+				118CC5A62DAAB0540075E07A /* 왓이트 */,
+				118CC5B42DAAB0550075E07A /* 왓이트Tests */,
+				118CC5BE2DAAB0550075E07A /* 왓이트UITests */,
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				6858D639566953539D727D05 /* Pods */,
@@ -217,9 +247,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		118CC5A42DAAB0540075E07A /* 왓이트 */ = {
+		118CC5A42DAAB0540075E07A /* 왓이트 */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 118CC5C32DAAB0550075E07A /* Build configuration list for PBXNativeTarget "왓이트" */;
+			buildConfigurationList = 118CC5C32DAAB0550075E07A /* Build configuration list for PBXNativeTarget "왓이트" */;
 			buildPhases = (
 				118CC5A12DAAB0540075E07A /* Sources */,
 				118CC5A22DAAB0540075E07A /* Frameworks */,
@@ -230,16 +260,16 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				118CC5A62DAAB0540075E07A /* 왓이트 */,
+				118CC5A62DAAB0540075E07A /* 왓이트 */,
 			);
 			name = "왓이트";
 			productName = "왓이트";
 			productReference = 118CC5A52DAAB0540075E07A /* 왓이트.app */;
 			productType = "com.apple.product-type.application";
 		};
-		118CC5B02DAAB0550075E07A /* 왓이트Tests */ = {
+		118CC5B02DAAB0550075E07A /* 왓이트Tests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 118CC5C72DAAB0550075E07A /* Build configuration list for PBXNativeTarget "왓이트Tests" */;
+			buildConfigurationList = 118CC5C72DAAB0550075E07A /* Build configuration list for PBXNativeTarget "왓이트Tests" */;
 			buildPhases = (
 				118CC5AD2DAAB0550075E07A /* Sources */,
 				118CC5AE2DAAB0550075E07A /* Frameworks */,
@@ -251,16 +281,16 @@
 				118CC5B32DAAB0550075E07A /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				118CC5B42DAAB0550075E07A /* 왓이트Tests */,
+				118CC5B42DAAB0550075E07A /* 왓이트Tests */,
 			);
 			name = "왓이트Tests";
 			productName = "왓이트Tests";
 			productReference = 118CC5B12DAAB0550075E07A /* 왓이트Tests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		118CC5BA2DAAB0550075E07A /* 왓이트UITests */ = {
+		118CC5BA2DAAB0550075E07A /* 왓이트UITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 118CC5CB2DAAB0550075E07A /* Build configuration list for PBXNativeTarget "왓이트UITests" */;
+			buildConfigurationList = 118CC5CB2DAAB0550075E07A /* Build configuration list for PBXNativeTarget "왓이트UITests" */;
 			buildPhases = (
 				118CC5B72DAAB0550075E07A /* Sources */,
 				118CC5B82DAAB0550075E07A /* Frameworks */,
@@ -272,7 +302,7 @@
 				118CC5BD2DAAB0550075E07A /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				118CC5BE2DAAB0550075E07A /* 왓이트UITests */,
+				118CC5BE2DAAB0550075E07A /* 왓이트UITests */,
 			);
 			name = "왓이트UITests";
 			productName = "왓이트UITests";
@@ -367,9 +397,9 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
-				118CC5A42DAAB0540075E07A /* 왓이트 */,
-				118CC5B02DAAB0550075E07A /* 왓이트Tests */,
-				118CC5BA2DAAB0550075E07A /* 왓이트UITests */,
+				118CC5A42DAAB0540075E07A /* 왓이트 */,
+				118CC5B02DAAB0550075E07A /* 왓이트Tests */,
+				118CC5BA2DAAB0550075E07A /* 왓이트UITests */,
 			);
 		};
 /* End PBXProject section */
@@ -447,13 +477,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -559,12 +585,12 @@
 /* Begin PBXTargetDependency section */
 		118CC5B32DAAB0550075E07A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 118CC5A42DAAB0540075E07A /* 왓이트 */;
+			target = 118CC5A42DAAB0540075E07A /* 왓이트 */;
 			targetProxy = 118CC5B22DAAB0550075E07A /* PBXContainerItemProxy */;
 		};
 		118CC5BD2DAAB0550075E07A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 118CC5A42DAAB0540075E07A /* 왓이트 */;
+			target = 118CC5A42DAAB0540075E07A /* 왓이트 */;
 			targetProxy = 118CC5BC2DAAB0550075E07A /* PBXContainerItemProxy */;
 		};
 		331C8086294A63A400263BE5 /* PBXTargetDependency */ = {
@@ -1186,7 +1212,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		118CC5C32DAAB0550075E07A /* Build configuration list for PBXNativeTarget "왓이트" */ = {
+		118CC5C32DAAB0550075E07A /* Build configuration list for PBXNativeTarget "왓이트" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				118CC5C42DAAB0550075E07A /* Debug */,
@@ -1196,7 +1222,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		118CC5C72DAAB0550075E07A /* Build configuration list for PBXNativeTarget "왓이트Tests" */ = {
+		118CC5C72DAAB0550075E07A /* Build configuration list for PBXNativeTarget "왓이트Tests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				118CC5C82DAAB0550075E07A /* Debug */,
@@ -1206,7 +1232,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		118CC5CB2DAAB0550075E07A /* Build configuration list for PBXNativeTarget "왓이트UITests" */ = {
+		118CC5CB2DAAB0550075E07A /* Build configuration list for PBXNativeTarget "왓이트UITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				118CC5CC2DAAB0550075E07A /* Debug */,

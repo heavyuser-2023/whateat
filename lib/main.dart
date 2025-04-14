@@ -23,7 +23,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  bool _showSplash = true;
+  bool _showSplash = false;
 
   @override
   void initState() {
@@ -35,14 +35,8 @@ class _MyAppState extends State<MyApp> {
     // 데이터베이스 초기화
     await _resetDatabaseIfNeeded();
     
-    // 2초 후 스플래시 화면 종료
-    Timer(const Duration(seconds: 1), () {
-      setState(() {
-        _showSplash = false;
-      });
-      // 상태 표시줄 다시 표시
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    });
+    // 상태 표시줄 다시 표시
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
   
   // 데이터베이스 초기화 함수
