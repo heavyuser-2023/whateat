@@ -58,3 +58,9 @@ app.*.map.json
 .env
 *.env
 assets/config/.env
+
+# 환경 변수 및 민감 정보
+assets/config/.env
+android/key.properties
+*.jks
+*.keystore
