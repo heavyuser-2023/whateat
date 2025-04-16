@@ -1,0 +1,1 @@
+/Users/heavyuser/vscode/what_eat/build/app/intermediates/cxx/RelWithDebInfo/62432s39/obj/x86_64

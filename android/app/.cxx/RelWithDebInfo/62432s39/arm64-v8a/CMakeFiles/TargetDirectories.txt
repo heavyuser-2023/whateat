@@ -1,0 +1,2 @@
+/Users/heavyuser/vscode/what_eat/android/app/.cxx/RelWithDebInfo/62432s39/arm64-v8a/CMakeFiles/edit_cache.dir
+/Users/heavyuser/vscode/what_eat/android/app/.cxx/RelWithDebInfo/62432s39/arm64-v8a/CMakeFiles/rebuild_cache.dir
