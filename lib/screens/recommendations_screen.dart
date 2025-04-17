@@ -10,6 +10,7 @@ import '../database/database_helper.dart';
 import 'meal_history_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class GoogleBannerAd extends StatefulWidget {
   final String adType;
@@ -40,12 +41,8 @@ class _GoogleBannerAdState extends State<GoogleBannerAd> {
   }
 
   void _loadBannerAd() {
-    // 테스트 광고 ID - 실제 앱에서는 AdMob에서 발급받은 실제 ID로 변경 필요
-    final adUnitId = Platform.isAndroid
-        ? 'ca-app-pub-3940256099942544/6300978111'  // 안드로이드 테스트 ID
-        : 'ca-app-pub-3940256099942544/2934735716'; // iOS 테스트 ID
-
-    // 광고 사이즈 설정 (BANNER, LARGE_BANNER, MEDIUM_RECTANGLE, FULL_BANNER, LEADERBOARD)
+    // .env에서 광고 단위 ID 읽기
+    final adUnitId = dotenv.env['ADMOB_BANNER_ID'] ?? '';
     final adSize = widget.adType == 'large' ? AdSize.mediumRectangle : AdSize.banner;
 
     _bannerAd = BannerAd(
@@ -60,7 +57,7 @@ class _GoogleBannerAdState extends State<GoogleBannerAd> {
           });
         },
         onAdFailedToLoad: (ad, error) {
-          print('배너 광고 로드 실패: ${error.message}');
+          print('배너 광고 로드 실패: [31m${error.message}[0m');
           ad.dispose();
         },
       ),
