@@ -354,7 +354,27 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
             )
           : _hasError
               ? _buildErrorView()
-              : _buildResultView(),
+              : Column(
+                  children: [
+                    Expanded(child: _buildResultView()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text(
+                          '※ 본 앱의 음식 정보 및 추천은 인공지능(AI) 분석 결과로, 참고용 정보입니다.\n의료적 진단, 치료, 처방을 대체하지 않으며, 건강에 관한 중요한 결정은 반드시 전문 의료진과 상담하시기 바랍니다.',
+                          style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
     );
   }
   
@@ -713,14 +733,32 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                       const Icon(Icons.source_outlined, size: 16, color: Colors.grey),
                       const SizedBox(width: 6),
                       Expanded(
-                        child: Text(
-                          '출처: ${recommendation.source}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                            color: Colors.grey,
-                          ),
-                        ),
+                        child: _isUrl(recommendation.source)
+                            ? GestureDetector(
+                                onTap: () async {
+                                  final url = recommendation.source.trim();
+                                  if (await canLaunchUrl(Uri.parse(url))) {
+                                    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                                  }
+                                },
+                                child: Text(
+                                  '출처: ${recommendation.source}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.blue,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                '출처: ${recommendation.source}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontStyle: FontStyle.italic,
+                                  color: Colors.grey,
+                                ),
+                              ),
                       ),
                     ],
                   ),
@@ -779,5 +817,11 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
     } catch (e) {
       print('식사 기록 업데이트 중 오류: $e');
     }
+  }
+
+  bool _isUrl(String text) {
+    final urlPattern = r'^(https?:\/\/)?([\w\-]+\.)+[\w\-]+(\/[\w\-./?%&=]*)?$';
+    final regex = RegExp(urlPattern);
+    return regex.hasMatch(text.trim());
   }
 } 

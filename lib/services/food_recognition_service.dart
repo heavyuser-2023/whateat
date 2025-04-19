@@ -104,13 +104,13 @@ class FoodRecognitionService {
 1. 인식된 음식 이름 (recognized_food)
 2. 건강 상태를 고려한 음식 평가 (evaluation)
 3. 이 식단에서 건강 상태에 적합한 음식 추천 목록 (recommendations)
-4. 각 추천 음식에 대한 출처 정보 (source) - 정보의 출처, 연구 결과, 의학적 근거 등을 간략히 기술해주세요
+4. 각 추천 음식에 대한 출처 정보 (source) - 반드시 신뢰할 수 있는 공식 기관, 학회, 정부, 논문 등에서 제공하는 외부 링크(URL)만 포함해주세요. 만약 공식적인 외부 링크가 없다면, '공식 출처 없음' 또는 관련 학회명, 기관명 등만 기입해주세요. 출처 링크가 영어(외국) 사이트일 경우 번역하지 말고 원문 그대로 제공해주세요. 만약 링크에 언어 선택 파라미터(en, ko 등)가 있다면 반드시 en(영문) 버전의 링크만 제공해주세요.
 
 recommendations는 다음 필드를 포함한 JSON 객체 배열로 구성해주세요:
 - name: 추천 음식 이름
 - description: 왜 이 음식이 추천되는지 설명
 - compatibilityScore: 0.0 ~ 1.0 사이의 적합도 점수
-- source: 해당 추천의 출처 (연구 결과, 의학적 근거, 영양학적 이론 등)
+- source: 해당 추천의 공식 출처 (공식 기관, 학회, 정부, 논문 등 외부 링크(URL) 또는 공식 출처 없음, 영어 사이트는 번역하지 않고 원문 그대로, 언어 선택이 가능하면 반드시 en(영문) 링크)
 
 예시 응답 형식:
 {
@@ -121,13 +121,19 @@ recommendations는 다음 필드를 포함한 JSON 객체 배열로 구성해주
       "name": "추천 음식 1",
       "description": "추천 이유 설명",
       "compatibilityScore": 0.9,
-      "source": "미국 심장 협회 연구(2023)"
+      "source": "https://www.heart.org/en/healthy-living/healthy-eating"
     },
     {
       "name": "추천 음식 2",
       "description": "추천 이유 설명",
       "compatibilityScore": 0.7,
-      "source": "대한당뇨병학회 식이 가이드라인(2022)"
+      "source": "공식 출처 없음"
+    },
+    {
+      "name": "추천 음식 3",
+      "description": "추천 이유 설명",
+      "compatibilityScore": 0.8,
+      "source": "https://www.cancer.gov/about-cancer/causes-prevention/risk/diet"
     }
   ]
 }
