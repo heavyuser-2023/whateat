@@ -139,11 +139,13 @@ class FoodRecommendation {
   final String name;
   final String description;
   final double compatibilityScore;
+  final String source;
 
   FoodRecommendation({
     required this.name,
     required this.description,
     required this.compatibilityScore,
+    this.source = '',
   });
 
   factory FoodRecommendation.fromJson(Map<String, dynamic> json) {
@@ -151,6 +153,7 @@ class FoodRecommendation {
       name: json['name'],
       description: json['description'],
       compatibilityScore: json['compatibilityScore'],
+      source: json['source'] ?? '',
     );
   }
 } 

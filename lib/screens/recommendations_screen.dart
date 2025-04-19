@@ -546,7 +546,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
               padding: const EdgeInsets.only(bottom: 16.0, left: 16.0, right: 16.0),
               itemCount: goodFoods.length,
               itemBuilder: (BuildContext context, int index) {
-                return _buildFoodCard(goodFoods[index], index + 1, false);
+                return _buildRecommendationCard(goodFoods[index], false);
               },
             ),
           ],
@@ -592,7 +592,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
               padding: const EdgeInsets.only(bottom: 24.0, left: 16.0, right: 16.0),
               itemCount: alternativeFoods.length,
               itemBuilder: (BuildContext context, int index) {
-                return _buildFoodCard(alternativeFoods[index], null, true);
+                return _buildRecommendationCard(alternativeFoods[index], true);
               },
             ),
           ],
@@ -601,158 +601,164 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
     );
   }
 
-  // 음식 카드 위젯 생성 메서드
-  Widget _buildFoodCard(FoodRecommendation recommendation, int? rank, bool isAlternative) {
-    final isSelected = _selectedFoodNames.contains(recommendation.name);
+  Widget _buildRecommendationCard(FoodRecommendation recommendation, bool isAlternative) {
+    // 색상 설정 (일반 추천과 차선책 구분)
+    final Color backgroundColor = isAlternative 
+        ? Colors.amber.shade50  // 차선책은 주황색 계열
+        : Colors.green.shade50; // 일반 추천은 녹색 계열
+    
+    final Color borderColor = isAlternative
+        ? Colors.amber.shade300
+        : Colors.green.shade300;
+    
+    final Color iconColor = isAlternative
+        ? Colors.orange.shade700
+        : Colors.green.shade700;
+    
+    final Widget icon = isAlternative
+        ? const Icon(Icons.lightbulb_outline, size: 24)
+        : const Icon(Icons.check_circle_outline, size: 24);
+    
+    final bool isSelected = _selectedFoodNames.contains(recommendation.name);
+    
+    // 적합도 점수 정수 변환 (0-100 척도)
+    final int compatibilityPercentage = (recommendation.compatibilityScore * 100).round();
     
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      elevation: 4,
+      elevation: isSelected ? 4 : 1,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isSelected ? Colors.blue.shade500 : borderColor,
+          width: isSelected ? 2.0 : 1.0,
+        ),
       ),
-      color: isSelected 
-        ? Colors.green.shade100 
-        : isAlternative 
-          ? Colors.amber.shade50 
-          : null,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
-            child: Row(
-              children: [
-                isAlternative 
-                ? Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade100,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Icon(
-                      Icons.lightbulb_outline,
-                      color: Colors.amber,
-                      size: 24,
-                    ),
-                  )
-                : CircleAvatar(
-                    backgroundColor: rank != null ? _getRankColor(rank) : Colors.green,
-                    foregroundColor: Colors.white,
-                    radius: 20,
+      child: InkWell(
+        onTap: () => _toggleFoodSelection(recommendation.name),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 헤더 영역 (음식 이름 + 아이콘)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
                     child: Text(
-                      rank != null ? '$rank' : '',
+                      recommendation.name,
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold,
                         fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    isAlternative 
-                      ? recommendation.name.replaceFirst('차선책: ', '') 
-                      : recommendation.name,
+                  SizedBox(
+                    width: 40,
+                    child: CircleAvatar(
+                      backgroundColor: backgroundColor,
+                      child: IconTheme(
+                        data: IconThemeData(color: iconColor),
+                        child: isSelected
+                            ? const Icon(Icons.check, size: 24, color: Colors.blue)
+                            : icon,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // 적합도 표시 바
+              Row(
+                children: [
+                  Icon(
+                    Icons.favorite,
+                    color: compatibilityPercentage >= 80
+                        ? Colors.green
+                        : compatibilityPercentage >= 60
+                            ? Colors.amber
+                            : Colors.orange,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '적합도: $compatibilityPercentage%',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      fontSize: 14,
                     ),
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isAlternative 
-                      ? Colors.amber.withOpacity(0.2)
-                      : _getCompatibilityColor(recommendation.compatibilityScore).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: isAlternative
-                    ? const Text(
-                        '차선책',
-                        style: TextStyle(
-                          color: Colors.amber,
-                          fontWeight: FontWeight.bold,
+                ],
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // 설명
+              Text(
+                recommendation.description,
+                style: const TextStyle(fontSize: 14),
+              ),
+              
+              // 출처 정보 표시
+              if (recommendation.source.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.source_outlined, size: 16, color: Colors.grey),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '출처: ${recommendation.source}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey,
+                          ),
                         ),
-                      )
-                    : Text(
-                        '적합도 ${(recommendation.compatibilityScore * 100).toStringAsFixed(0)}%',
+                      ),
+                    ],
+                  ),
+                ),
+              
+              // 선택 상태 표시
+              if (isSelected)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.blue.shade500, size: 20),
+                      const SizedBox(width: 4),
+                      const Text(
+                        '선택됨',
                         style: TextStyle(
-                          color: _getCompatibilityColor(recommendation.compatibilityScore),
+                          color: Colors.blue,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '추천 이유:',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
+                    ],
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  recommendation.description,
-                  style: const TextStyle(fontSize: 15),
-                ),
-              ],
-            ),
+            ],
           ),
-          Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.fromLTRB(0, 0, 8.0, 8.0),
-            child: isSelected
-                ? TextButton.icon(
-                    icon: const Icon(Icons.check_circle, color: Colors.green),
-                    label: const Text('저장됨', style: TextStyle(color: Colors.green)),
-                    onPressed: () {
-                      setState(() {
-                        _selectedFoodNames.remove(recommendation.name);
-                      });
-                    },
-                  )
-                : TextButton.icon(
-                    icon: const Icon(Icons.add_circle_outline, color: Colors.blue),
-                    label: const Text('선택하기'),
-                    onPressed: () {
-                      setState(() {
-                        _selectedFoodNames.add(recommendation.name);
-                      });
-                    },
-                  ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Color _getCompatibilityColor(double score) {
-    if (score >= 0.8) return Colors.green;
-    if (score >= 0.6) return Colors.orange;
-    return Colors.red;
-  }
-  
-  Color _getRankColor(int rank) {
-    switch (rank) {
-      case 1:
-        return Colors.amber.shade700; // 금메달 색상
-      case 2:
-        return Colors.blueGrey.shade400; // 은메달 색상
-      case 3:
-        return Colors.brown.shade300; // 동메달 색상
-      default:
-        return Colors.green;
-    }
+  void _toggleFoodSelection(String foodName) {
+    setState(() {
+      if (_selectedFoodNames.contains(foodName)) {
+        _selectedFoodNames.remove(foodName);
+      } else {
+        _selectedFoodNames.add(foodName);
+      }
+    });
   }
 
   // 식사 레코드 목록 업데이트

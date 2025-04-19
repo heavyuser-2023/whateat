@@ -7,6 +7,8 @@ import 'dart:io';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/meal.dart';
 import 'dart:ui' as ui;
+import 'dart:typed_data';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class FoodAnalysisResult {
   final String recognizedFood;
@@ -82,36 +84,58 @@ class FoodRecognitionService {
     List<String> healthConditions,
   ) async {
     try {
-      // 현재 언어 코드 가져오기
-      final String langCode = currentLanguageCode;
+      const int maxImageSizeInBytes = 4 * 1024 * 1024; // 4MB 제한
+      final Uint8List imageBytes = await _compressImage(imageFile, maxImageSizeInBytes);
+      final String base64Image = base64Encode(imageBytes);
       
-      // 이미지를 base64로 인코딩
-      final bytes = await imageFile.readAsBytes();
-      final base64Image = base64Encode(bytes);
+      // 언어 감지 및 언어 코드에 맞는 지시문 설정
+      String langCode = currentLanguageCode;
+      String langInstruction = getLanguageInstruction(langCode);
+      
+      // 건강 상태 문자열로 변환
+      final String healthConditionsText = healthConditions.isEmpty 
+          ? '특별한 건강 상태가 없음'
+          : healthConditions.join(', ');
+      
+      final promptText = '''
+이 이미지에 있는 음식을 분석하고 다음 건강 상태에 적합한지 평가해주세요: $healthConditionsText.
 
-      // 건강 상태 조건이 너무 길면 프롬프트 최적화
-      String promptText = "이 음식 메뉴 이미지를 분석해주세요.";
-      
-      if (healthConditions.length > 3) {
-        // 건강 조건이 많은 경우 가장 중요한 조건 3개만 명시적으로 언급
-        promptText += " 특히 다음 건강 상태에 적합한지 중점적으로 평가해주세요: ${healthConditions.take(3).join(', ')}";
-        promptText += " 그리고 나머지 ${healthConditions.length - 3}개 건강 조건들(${healthConditions.skip(3).join(', ')})도 함께 고려해주세요.";
-      } else {
-        promptText += " 다음 건강 상태에 맞는 선택을 알려주세요: ${healthConditions.join(', ')}.";
-      }
-      
-      promptText += " 엄격한 제한사항: 반드시 이 메뉴 이미지에 나와있는 음식 중에서만 추천해야 합니다. 메뉴에 없는 음식은 절대 추천하지 마세요.";
-      promptText += " 메뉴에 있는 음식을 다음 두 가지 카테고리로 분석해 주세요:";
-      promptText += " 1. 건강에 좋은 음식: 메뉴 내에서 건강 상태에 가장 적합한 음식을 최대 5가지 선택하여 추천 목록에 추가해주세요.";
-      promptText += " 2. 차선책 음식: 건강에 완벽하게 좋지는 않지만, 메뉴 내에서 상대적으로 덜 해로운 음식을 최대 3가지 선택하여 '차선책: ' 접두어를 붙여 추천 목록에 함께 추가해주세요.";
-      promptText += " 두 카테고리 모두 메뉴에 있는 실제 음식 이름을 사용해야 합니다. 일반적인 조언이 아닌 실제 메뉴 항목만 추천해주세요.";
-      promptText += " 만약 메뉴에서 건강에 좋은 음식이 전혀 없다면, 차선책만 제공해주세요.";
-      promptText += " ${getLanguageInstruction(langCode)}";
-      promptText += " JSON 형식으로 응답해주세요: {\"recognized_food\": \"인식된 메뉴 이름\", \"evaluation\": \"건강 상태에 대한 평가\", \"recommendations\": [{\"name\": \"메뉴에서 추천하는 음식 이름\", \"description\": \"추천 이유\", \"compatibilityScore\": 0.95}, ...]}";
-      
-      print('최종 프롬프트: $promptText'); // 디버그 로그
+제공된 이미지를 분석하여 다음 정보를 정확히 JSON 형식으로 반환해주세요:
+1. 인식된 음식 이름 (recognized_food)
+2. 건강 상태를 고려한 음식 평가 (evaluation)
+3. 이 식단에서 건강 상태에 적합한 음식 추천 목록 (recommendations)
+4. 각 추천 음식에 대한 출처 정보 (source) - 정보의 출처, 연구 결과, 의학적 근거 등을 간략히 기술해주세요
 
-      // API 호출을 위한 요청 본문 생성
+recommendations는 다음 필드를 포함한 JSON 객체 배열로 구성해주세요:
+- name: 추천 음식 이름
+- description: 왜 이 음식이 추천되는지 설명
+- compatibilityScore: 0.0 ~ 1.0 사이의 적합도 점수
+- source: 해당 추천의 출처 (연구 결과, 의학적 근거, 영양학적 이론 등)
+
+예시 응답 형식:
+{
+  "recognized_food": "인식된 음식 이름",
+  "evaluation": "건강 상태를 고려한 전반적인 평가",
+  "recommendations": [
+    {
+      "name": "추천 음식 1",
+      "description": "추천 이유 설명",
+      "compatibilityScore": 0.9,
+      "source": "미국 심장 협회 연구(2023)"
+    },
+    {
+      "name": "추천 음식 2",
+      "description": "추천 이유 설명",
+      "compatibilityScore": 0.7,
+      "source": "대한당뇨병학회 식이 가이드라인(2022)"
+    }
+  ]
+}
+
+$langInstruction
+''';
+
+      // API 요청 JSON 구조 생성
       final payload = jsonEncode({
         "contents": [
           {
@@ -231,40 +255,18 @@ class FoodRecognitionService {
             
             List<FoodRecommendation> recommendations = [];
             
+            // 추천 목록 파싱
             if (data.containsKey('recommendations') && data['recommendations'] is List) {
               final List<dynamic> recommendationsList = data['recommendations'];
-              print('추천 목록 수: ${recommendationsList.length}'); // 디버그용 로그
               
-              recommendations = recommendationsList.map((item) {
-                final name = item['name'] ?? '추천 음식';
-                final description = item['description'] ?? '설명 없음';
-                double compatibilityScore = 0.5;  // 기본값 설정
-                
-                try {
-                  // 호환성 점수를 다양한 형식으로 처리
-                  if (item['compatibilityScore'] is double) {
-                    compatibilityScore = item['compatibilityScore'];
-                  } else if (item['compatibilityScore'] is int) {
-                    compatibilityScore = (item['compatibilityScore'] as int).toDouble();
-                  } else if (item['compatibilityScore'] != null) {
-                    // 문자열이나 다른 형식을 처리
-                    compatibilityScore = double.tryParse(item['compatibilityScore'].toString()) ?? 0.5;
-                  }
-                } catch (e) {
-                  print('호환성 점수 파싱 오류: $e');
-                  // 오류 발생 시 기본값 사용
-                }
-                
-                print('추천: $name, 점수: $compatibilityScore'); // 디버그용 로그
-                
-                return FoodRecommendation(
-                  name: name,
-                  description: description,
-                  compatibilityScore: compatibilityScore,
-                );
-              }).toList();
-            } else {
-              print('추천 목록을 찾을 수 없거나 형식이 잘못됨: ${data['recommendations']}'); // 디버그용 로그
+              recommendations = recommendationsList.map((item) => FoodRecommendation(
+                name: item['name'] ?? '이름 없음',
+                description: item['description'] ?? '설명 없음',
+                compatibilityScore: item['compatibilityScore'] is double 
+                  ? item['compatibilityScore'] 
+                  : double.parse(item['compatibilityScore'].toString()),
+                source: item['source'] ?? '',
+              )).toList();
             }
             
             if (recommendations.isEmpty) {
@@ -279,6 +281,7 @@ class FoodRecognitionService {
                   name: '차선책: 메뉴에서 가장 덜 해로운 선택',
                   description: evaluation,
                   compatibilityScore: 0.6,
+                  source: '',
                 ));
               }
             }
@@ -327,6 +330,7 @@ class FoodRecognitionService {
                 name: name,
                 description: description,
                 compatibilityScore: score,
+                source: '',
               ));
             }
           }
@@ -344,6 +348,7 @@ class FoodRecognitionService {
               name: '차선책: 메뉴에서 가장 덜 해로운 선택',
               description: evaluation,
               compatibilityScore: 0.6,
+              source: '',
             ));
           }
         }
@@ -412,6 +417,49 @@ class FoodRecognitionService {
     } catch (e) {
       print('응답 파싱 오류: $e');
       return [];
+    }
+  }
+
+  // 이미지 압축 메서드
+  Future<Uint8List> _compressImage(File imageFile, int maxSizeInBytes) async {
+    try {
+      // 원본 이미지 바이트 가져오기
+      final bytes = await imageFile.readAsBytes();
+      
+      // 이미 제한 크기 이내라면 그대로 반환
+      if (bytes.length <= maxSizeInBytes) {
+        print('이미지가 이미 적합한 크기임: ${bytes.length} 바이트');
+        return bytes;
+      }
+      
+      print('이미지 압축 시작: 원본 크기 ${bytes.length} 바이트');
+      
+      // 압축 품질 계산 (파일 크기에 따라 동적으로 조정)
+      int quality = 90;
+      if (bytes.length > maxSizeInBytes * 2) {
+        quality = 70;
+      }
+      if (bytes.length > maxSizeInBytes * 4) {
+        quality = 50;
+      }
+      
+      // 이미지 압축
+      final Uint8List? compressedBytes = await FlutterImageCompress.compressWithFile(
+        imageFile.absolute.path,
+        quality: quality,
+      );
+      
+      if (compressedBytes == null) {
+        print('이미지 압축 실패, 원본 반환');
+        return bytes;
+      }
+      
+      print('이미지 압축 완료: ${compressedBytes.length} 바이트, 품질: $quality%');
+      return compressedBytes;
+    } catch (e) {
+      print('이미지 압축 중 오류: $e');
+      // 오류 발생 시 원본 이미지 반환
+      return await imageFile.readAsBytes();
     }
   }
 } 
