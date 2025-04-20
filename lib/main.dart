@@ -396,6 +396,18 @@ class HomePage extends StatelessWidget {
                   
                   const SizedBox(height: 40),
                   
+                  // 면책 조항 위치 이동
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // 패딩 조정
+                    child: Text(
+                      '※ 본 앱의 음식 정보 및 추천은 인공지능(AI) 분석 결과로, 참고용 정보입니다.\n의료적 진단, 치료, 처방을 대체하지 않으며, 건강에 관한 중요한 결정은 반드시 전문 의료진과 상담하시기 바랍니다.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 30), // 버튼 위 간격 추가
+                  
                   // 시작하기 버튼
                   Container(
                     width: double.infinity,
