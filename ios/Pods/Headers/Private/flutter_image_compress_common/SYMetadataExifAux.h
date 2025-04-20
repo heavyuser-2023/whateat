@@ -1,0 +1,1 @@
+../../../../.symlinks/plugins/flutter_image_compress_common/ios/Classes/SYPictureMetadata/SYMetadataExifAux.h

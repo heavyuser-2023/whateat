@@ -1,0 +1,15 @@
+${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources.sh
+${PODS_CONFIGURATION_BUILD_DIR}/GoogleUserMessagingPlatform/UserMessagingPlatformResources.bundle
+${PODS_CONFIGURATION_BUILD_DIR}/GoogleUtilities/GoogleUtilities_Privacy.bundle
+${PODS_CONFIGURATION_BUILD_DIR}/PromisesObjC/FBLPromises_Privacy.bundle
+${PODS_CONFIGURATION_BUILD_DIR}/SDWebImage/SDWebImage.bundle
+${PODS_CONFIGURATION_BUILD_DIR}/camera_avfoundation/camera_avfoundation_privacy.bundle
+${PODS_CONFIGURATION_BUILD_DIR}/google_mobile_ads/google_mobile_ads.bundle
+${PODS_CONFIGURATION_BUILD_DIR}/image_picker_ios/image_picker_ios_privacy.bundle
+${PODS_CONFIGURATION_BUILD_DIR}/nanopb/nanopb_Privacy.bundle
+${PODS_CONFIGURATION_BUILD_DIR}/path_provider_foundation/path_provider_foundation_privacy.bundle
+${PODS_CONFIGURATION_BUILD_DIR}/record_ios/record_ios_privacy.bundle
+${PODS_CONFIGURATION_BUILD_DIR}/shared_preferences_foundation/shared_preferences_foundation_privacy.bundle
+${PODS_CONFIGURATION_BUILD_DIR}/sqflite_darwin/sqflite_darwin_privacy.bundle
+${PODS_CONFIGURATION_BUILD_DIR}/url_launcher_ios/url_launcher_ios_privacy.bundle
+${PODS_CONFIGURATION_BUILD_DIR}/webview_flutter_wkwebview/webview_flutter_wkwebview_privacy.bundle

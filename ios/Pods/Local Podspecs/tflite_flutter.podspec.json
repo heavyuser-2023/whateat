@@ -1,0 +1,40 @@
+{
+  "name": "tflite_flutter",
+  "version": "0.0.1",
+  "summary": "TensorFlow Lite plugin for Flutter apps.",
+  "description": "TensorFlow Lite plugin for Flutter apps.",
+  "homepage": "http://example.com",
+  "license": {
+    "file": "../LICENSE"
+  },
+  "authors": {
+    "Your Company": "email@example.com"
+  },
+  "source": {
+    "path": "."
+  },
+  "dependencies": {
+    "Flutter": [
+
+    ],
+    "TensorFlowLiteSwift": [
+      "2.12.0"
+    ],
+    "TensorFlowLiteSwift/Metal": [
+      "2.12.0"
+    ],
+    "TensorFlowLiteSwift/CoreML": [
+      "2.12.0"
+    ]
+  },
+  "platforms": {
+    "ios": "11.0"
+  },
+  "static_framework": true,
+  "pod_target_xcconfig": {
+    "DEFINES_MODULE": "YES",
+    "EXCLUDED_ARCHS[sdk=iphonesimulator*]": "i386"
+  },
+  "swift_versions": "5.0",
+  "swift_version": "5.0"
+}

@@ -1,0 +1,1 @@
+../../../../.symlinks/plugins/sqflite_darwin/darwin/sqflite_darwin/Sources/sqflite_darwin/include/sqflite_darwin/SqflitePluginPublic.h
