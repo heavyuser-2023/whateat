@@ -14,10 +14,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class GoogleBannerAd extends StatefulWidget {
   final String adType;
+  final String? adUnitId;
   
   const GoogleBannerAd({
     Key? key,
     this.adType = 'normal',
+    this.adUnitId,
   }) : super(key: key);
 
   @override
@@ -41,8 +43,8 @@ class _GoogleBannerAdState extends State<GoogleBannerAd> {
   }
 
   void _loadBannerAd() {
-    // .env에서 광고 단위 ID 읽기
-    final adUnitId = dotenv.env['ADMOB_BANNER_ID'] ?? '';
+    // 광고 단위 ID를 직접 지정
+    final adUnitId = widget.adUnitId ?? 'ca-app-pub-5031305118839759/4468276310';
     final adSize = widget.adType == 'large' ? AdSize.mediumRectangle : AdSize.banner;
 
     _bannerAd = BannerAd(
@@ -57,7 +59,7 @@ class _GoogleBannerAdState extends State<GoogleBannerAd> {
           });
         },
         onAdFailedToLoad: (ad, error) {
-          print('배너 광고 로드 실패: [31m${error.message}[0m');
+          print('배너 광고 로드 실패:  31m${error.message} 0m');
           ad.dispose();
         },
       ),
