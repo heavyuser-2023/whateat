@@ -703,6 +703,57 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
               
               const SizedBox(height: 8),
               
+              // 적합도 그라데이션 바 추가
+              Container(
+                height: 12,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  gradient: const LinearGradient(
+                    colors: [Colors.red, Colors.yellow, Colors.green],
+                    stops: [0.0, 0.5, 1.0],
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        color: Colors.grey.shade200,
+                      ),
+                      FractionallySizedBox(
+                        widthFactor: recommendation.compatibilityScore,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.red,
+                                Colors.orange,
+                                Colors.yellow,
+                                Colors.lightGreen,
+                                Colors.green,
+                              ],
+                              stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
+                            ),
+                          ),
+                        ),
+                      ),
+                      // 점수 마커
+                      Positioned(
+                        left: MediaQuery.of(context).size.width * 0.9 * recommendation.compatibilityScore - 16,
+                        child: Container(
+                          width: 4,
+                          height: 12,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 8),
+              
               // 설명
               Text(
                 recommendation.description,
