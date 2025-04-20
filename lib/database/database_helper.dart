@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path, 
-      version: 3,
+      version: 4,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -113,7 +113,10 @@ class DatabaseHelper {
       ];
 
       for (var condition in newConditions) {
-        await db.insert('health_conditions', condition.toMap());
+        final existing = await db.query('health_conditions', where: 'id = ?', whereArgs: [condition.id]);
+        if (existing.isEmpty) {
+          await db.insert('health_conditions', condition.toMap());
+        }
       }
     }
     
@@ -133,6 +136,54 @@ class DatabaseHelper {
       } catch (e) {
         print('meals 테이블 업그레이드 오류: $e');
       }
+    }
+
+    // 버전 3에서 4로 업그레이드: 새로운 건강 상태 추가
+    if (oldVersion < 4) {
+      print('데이터베이스 버전 3에서 4로 업그레이드: 새로운 건강 상태 추가 시작');
+      final conditionsToAdd = [
+        HealthCondition(
+          id: 16, 
+          name: '통풍', 
+          description: '퓨린 함량이 높은 음식 제한이 필요함',
+        ),
+        HealthCondition(
+          id: 17, 
+          name: '대사증후군', 
+          description: '복부 비만, 고혈압, 고혈당, 고지혈증 등 복합적인 관리 필요',
+        ),
+        HealthCondition(
+          id: 18, 
+          name: '고지혈증', 
+          description: '혈중 지방(콜레스테롤, 중성지방) 수치 관리 필요',
+        ),
+        HealthCondition(
+          id: 19, 
+          name: '비만', 
+          description: '체중 관리 및 건강한 식습관 필요',
+        ),
+        HealthCondition(
+          id: 20, 
+          name: '지방간', 
+          description: '간 건강 개선을 위한 식단 관리 필요',
+        ),
+      ];
+
+      for (var condition in conditionsToAdd) {
+        try {
+          // 중복 삽입 방지: 해당 ID가 테이블에 없는 경우에만 삽입
+          final existing = await db.query('health_conditions', where: 'id = ?', whereArgs: [condition.id]);
+          if (existing.isEmpty) {
+            await db.insert('health_conditions', condition.toMap());
+            print('건강 상태 추가됨: ${condition.name} (ID: ${condition.id})');
+          } else {
+            print('건강 상태 이미 존재함: ${condition.name} (ID: ${condition.id})');
+          }
+        } catch (e) {
+          print('건강 상태 ${condition.name} 추가 오류: $e');
+        }
+      }
+      print('데이터베이스 버전 3에서 4로 업그레이드 완료');
     }
   }
 

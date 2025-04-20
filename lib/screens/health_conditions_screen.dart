@@ -84,10 +84,14 @@ class _HealthConditionsScreenState extends State<HealthConditionsScreen> {
   Widget build(BuildContext context) {
     // 카테고리별로 건강 상태 그룹화
     final Map<String, List<HealthCondition>> categorizedConditions = {
-      '기본 건강 상태': _healthConditions.where((c) => c.id <= 5).toList(),
-      '암 관련 건강 상태': _healthConditions.where((c) => c.id >= 6 && c.id <= 8 || c.id >= 11 && c.id <= 15).toList(),
-      '체중 & 체형 관리': _healthConditions.where((c) => c.id >= 9 && c.id <= 10).toList(),
+      '기본 건강 상태': _healthConditions.where((c) => [1, 2, 3, 4, 5].contains(c.id)).toList(),
+      '체중 & 체형 관리': _healthConditions.where((c) => [9, 10, 19].contains(c.id)).toList(),
+      '기타 만성질환': _healthConditions.where((c) => [16, 17, 18, 20].contains(c.id)).toList(),
+      '암 관련 건강 상태': _healthConditions.where((c) => [6, 7, 8, 11, 12, 13, 14, 15].contains(c.id)).toList(),
     };
+
+    // 빈 카테고리 제거
+    categorizedConditions.removeWhere((key, value) => value.isEmpty);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -412,6 +416,11 @@ class _HealthConditionsScreenState extends State<HealthConditionsScreen> {
       case 15: return Icons.healing;             // 전립선암
       case 9: return Icons.fitness_center;       // 근육질 몸만들기
       case 10: return Icons.line_weight;         // 살빼기
+      case 16: return Icons.personal_injury;     // 통풍 (임시 아이콘)
+      case 17: return Icons.health_and_safety_outlined; // 대사증후군 (임시 아이콘)
+      case 18: return Icons.water_drop;          // 고지혈증 (임시 아이콘, 혈액 관련)
+      case 19: return Icons.monitor_weight_outlined; // 비만
+      case 20: return Icons.food_bank_outlined;  // 지방간 (임시 아이콘)
       default: return Icons.health_and_safety;   // 기본 아이콘
     }
   }
@@ -424,6 +433,8 @@ class _HealthConditionsScreenState extends State<HealthConditionsScreen> {
         return Icons.healing;
       case '체중 & 체형 관리':
         return Icons.fitness_center;
+      case '기타 만성질환': // 새 카테고리 아이콘
+        return Icons.monitor_weight; // 예시 아이콘
       default:
         return Icons.health_and_safety;
     }

@@ -72,6 +72,11 @@ List<HealthCondition> defaultHealthConditions = [
     description: '특정 음식에 알레르기가 있음',
   ),
   HealthCondition(
+    id: 16, 
+    name: '통풍', 
+    description: '퓨린 함량이 높은 음식 제한이 필요함',
+  ),
+  HealthCondition(
     id: 6, 
     name: '유방암', 
     description: '유방암 환자를 위한 식단 필요',
@@ -120,5 +125,25 @@ List<HealthCondition> defaultHealthConditions = [
     id: 15, 
     name: '전립선암', 
     description: '전립선암 환자를 위한 식단 필요',
+  ),
+  HealthCondition(
+    id: 17, 
+    name: '대사증후군', 
+    description: '복부 비만, 고혈압, 고혈당, 고지혈증 등 복합적인 관리 필요',
+  ),
+  HealthCondition(
+    id: 18, 
+    name: '고지혈증', 
+    description: '혈중 지방(콜레스테롤, 중성지방) 수치 관리 필요',
+  ),
+  HealthCondition(
+    id: 19, 
+    name: '비만', 
+    description: '체중 관리 및 건강한 식습관 필요',
+  ),
+  HealthCondition(
+    id: 20, 
+    name: '지방간', 
+    description: '간 건강 개선을 위한 식단 관리 필요',
   ),
 ]; 

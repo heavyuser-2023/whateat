@@ -141,7 +141,8 @@ class _CameraScreenState extends State<CameraScreen> {
                         icon: const Icon(Icons.camera_alt),
                         label: const Text('사진 촬영'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Colors.white,
                         ),
                       ),
                       ElevatedButton.icon(
@@ -149,7 +150,8 @@ class _CameraScreenState extends State<CameraScreen> {
                         icon: const Icon(Icons.photo_library),
                         label: const Text('갤러리에서 선택'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.purple,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Colors.white,
                         ),
                       ),
                     ],
