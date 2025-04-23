@@ -1,8 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- 다음 권한들은 사진 선택 도구 사용 및 내부 저장소 사용으로 인해 더 이상 필요하지 않습니다. -->
+    <!-- <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" /> -->
+    <!-- <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" /> -->
+    <!-- <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" /> -->
+    <!-- <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" /> --> <!-- 비디오 권한도 제거 (사용하지 않는 경우) -->
     <application
         android:label="what_eat"
         android:name="${applicationName}"

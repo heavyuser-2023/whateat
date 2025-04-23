@@ -27,9 +27,9 @@ class CameraService {
 
   Future<File?> pickImageFromGallery() async {
     try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 90,
+      final XFile? image = await _picker.pickMedia(
+        // 필요한 경우 imageQuality 설정은 pickMedia에서 지원되지 않을 수 있음
+        // requestFullMetadata: false, // 메타데이터 필요 여부
       );
       
       if (image == null) return null;
