@@ -65,12 +65,6 @@ android/key.properties
 *.jks
 *.keystore
 
-# Android NDK 빌드 캐시 무시
+# Android Studio intermediate files.
 android/app/.cxx/
-android/app/.cxx/**
-android/app/.cxx/**/**
-android/app/.cxx/**/**/**
-android/app/.cxx/**/**/**/**
-android/app/.cxx/**/**/**/**/**
-android/app/.cxx/**/**/**/**/**/**
-android/app/.cxx/**/**/**/**/**/**/**
+android/app/build/
