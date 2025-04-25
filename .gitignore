@@ -5,7 +5,6 @@
 *.swp
 .DS_Store
 .atom/
-.build/
 .buildlog/
 .history
 .svn/
@@ -18,53 +17,55 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VS Code folder
+# .vscode/ # Uncomment if you don't want to version control VS Code settings.
 
 # Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
+.metadata
+.packages
 .flutter-plugins
 .flutter-plugins-dependencies
-.packages
 .pub-cache/
-.pub/
+.dart_tool/
 /build/
+lib/generated_plugin_registrant.dart
 
+# Build artifacts
+*.apk
+*.aab
+*.ipa
+app.*.symbols
+app.*.map.json
+
+# iOS specific
+**/ios/Flutter/.last_build_id
+ios/Pods/
+ios/Flutter/ephemeral/
+ios/.symlinks/
+ios/Runner.xcworkspace/
+ios/Runner.xcodeproj/project.xcworkspace/
+ios/Runner.xcodeproj/xcuserdata/
+
+# Android specific
+android/app/build/
+android/app/.cxx/
+android/.gradle/
+android/local.properties
+android/gradlew
+android/gradlew.bat
+android/gradle/
+android/key.properties
+*.jks
+*.keystore
+
+# Sensitive information / Environment variables
+.env
+*.env
+assets/config/.env
+
+# Custom rules (Keep existing custom rules below)
 # 디버그용 이미지 파일 (필터링에서 제외)
 !lib/temp_meal_images/
 !lib/temp_meal_images/.gitkeep
 lib/temp_meal_images/*.jpg
 lib/temp_meal_images/*.png
-
-# Web related
-lib/generated_plugin_registrant.dart
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-# 환경 변수 설정 파일
-.env
-*.env
-assets/config/.env
-
-# 환경 변수 및 민감 정보
-assets/config/.env
-android/key.properties
-*.jks
-*.keystore
-
-# Android Studio intermediate files.
-android/app/.cxx/
-android/app/build/

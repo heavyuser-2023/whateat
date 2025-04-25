@@ -760,46 +760,9 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                 style: const TextStyle(fontSize: 14),
               ),
               
-              // 출처 정보 표시
+              // 출처 정보 표시 (새로운 _buildSourceWidget 사용)
               if (recommendation.source.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.source_outlined, size: 16, color: Colors.grey),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: _isUrl(recommendation.source)
-                            ? GestureDetector(
-                                onTap: () async {
-                                  final url = recommendation.source.trim();
-                                  if (await canLaunchUrl(Uri.parse(url))) {
-                                    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-                                  }
-                                },
-                                child: Text(
-                                  '출처: ${recommendation.source}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontStyle: FontStyle.italic,
-                                    color: Colors.blue,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
-                              )
-                            : Text(
-                                '출처: ${recommendation.source}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontStyle: FontStyle.italic,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildSourceWidget(recommendation.source),
               
               // 선택 상태 표시
               if (isSelected)
@@ -822,6 +785,98 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // 새로운 출처 표시 위젯
+  Widget _buildSourceWidget(String sourceText) {
+    // "출처 정보 없음" 등의 특정 문자열 확인
+    if (sourceText.contains('출처 정보 없음') || sourceText.trim().isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.source_outlined, size: 16, color: Colors.grey),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                '출처 정보 없음', // 명확한 텍스트 표시
+                style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.orange),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // URL 패턴으로 URL 추출 시도 (단순 URL 문자열 자체인지 확인)
+    final urlPattern = r'^(https?:\/\/)?([\w\-]+\.)+[\w\-]+(\/[\w\-./?%&=]*)?$';
+    final regex = RegExp(urlPattern);
+    final isUrlOnly = regex.hasMatch(sourceText.trim());
+    String? url;
+    String summary = sourceText; // 기본적으로 전체 텍스트를 요약으로 간주
+
+    if (isUrlOnly) {
+      url = sourceText.trim();
+      summary = '출처 링크'; // URL만 있는 경우 기본 요약 텍스트
+    } else {
+      // 복합적인 문자열에서 URL 추출 시도 (예: "요약 (URL: 링크)")
+      final urlMatch = RegExp(r'\(URL:\s*(https?://[^\)]+)\)').firstMatch(sourceText);
+      if (urlMatch != null) {
+        url = urlMatch.group(1);
+        summary = sourceText.substring(0, urlMatch.start).trim();
+      }
+      // 만약 위 패턴으로 못 찾으면, URL 가능성이 있는 부분만 링크로 시도 (선택 사항)
+      // else if (regex.hasMatch(sourceText)) { ... }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.source_outlined, size: 16, color: Colors.grey),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(summary.isNotEmpty ? summary : '출처 정보', // 요약이 비었으면 기본 텍스트
+                     style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey)),
+                if (url != null) ...[ // URL이 있을 경우에만 링크 표시 (리스트로 감싸기)
+                  GestureDetector(
+                    onTap: () async {
+                      try {
+                        final uri = Uri.parse(url!); // Uri.parse로 유효성 검사 강화
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        } else {
+                          print('Could not launch $url');
+                        }
+                      } catch (e) {
+                         print('Invalid URL format: $url, Error: $e');
+                      }
+                    },
+                    child: Text(
+                      url,
+                      style: const TextStyle(fontSize: 12, color: Colors.blue, decoration: TextDecoration.underline),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ]
+                // 만약 URL은 없는데 요약만 있는 경우 (예: 출처 정보 없음 대신 다른 텍스트가 온 경우)
+                else if (summary.isNotEmpty && summary != '출처 정보 없음') ...[ // 리스트로 감싸기
+                  Text(
+                    '(출처 링크 없음)',
+                    style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey),
+                  ),
+                ]
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -854,11 +909,5 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
     } catch (e) {
       print('식사 기록 업데이트 중 오류: $e');
     }
-  }
-
-  bool _isUrl(String text) {
-    final urlPattern = r'^(https?:\/\/)?([\w\-]+\.)+[\w\-]+(\/[\w\-./?%&=]*)?$';
-    final regex = RegExp(urlPattern);
-    return regex.hasMatch(text.trim());
   }
 } 
