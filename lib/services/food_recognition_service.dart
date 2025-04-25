@@ -56,11 +56,8 @@ class FoodRecognitionService {
   // .env 파일에서 API 키를 로드
   String get apiKey {
     // 먼저 GEMINI_API_KEY 시도
-    String? key = dotenv.env['GEMINI_API_KEY'];
-    // 없으면 GOOGLE_API_KEY 시도
-    if (key == null || key.isEmpty) {
-      key = dotenv.env['GOOGLE_API_KEY'];
-    }
+    String? key = dotenv.env['GOOGLE_API_KEY'];
+  
     // 디버깅용 로그
     print('API 키 로드: ${key?.substring(0, 5)}... (${key?.length ?? 0}자)');
     return key ?? '';

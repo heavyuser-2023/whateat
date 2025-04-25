@@ -253,10 +253,10 @@ Future<void> main() async {
     await dotenv.load(fileName: 'assets/config/.env');
     print('환경 변수 로드됨: ${dotenv.env.keys.join(", ")}');
     
-    if (dotenv.env['GOOGLE_API_KEY'] == null && dotenv.env['GEMINI_API_KEY'] == null) {
+    if (dotenv.env['GOOGLE_API_KEY'] == null) {
       print('경고: API 키가 로드되지 않았습니다. .env 파일을 확인하세요.');
     } else {
-      print('API 키 길이: ${(dotenv.env['GOOGLE_API_KEY'] ?? dotenv.env['GEMINI_API_KEY'] ?? '').length}자');
+      print('API 키 길이: ${(dotenv.env['GOOGLE_API_KEY'] ?? '').length}자');
     }
   } catch (e) {
     print('환경 변수 로드 오류: $e');
