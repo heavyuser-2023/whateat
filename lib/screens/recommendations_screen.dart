@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path_pkg;
@@ -791,8 +792,21 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
 
   // 새로운 출처 표시 위젯
   Widget _buildSourceWidget(String sourceText) {
-    // "출처 정보 없음" 등의 특정 문자열 확인
-    if (sourceText.contains('출처 정보 없음') || sourceText.trim().isEmpty) {
+    // 현재 앱 언어 코드 가져오기
+    final String langCode = ui.PlatformDispatcher.instance.locale.languageCode;
+
+    // 다국어 문자열 정의
+    final String noSourceText = langCode == 'ko' ? '출처 정보 없음' : 'Source information not available';
+    final String generalSourceBaseText = langCode == 'ko' ? '일반적인 식단 지침 보기 (AHA)' : 'View general dietary guidelines (AHA)';
+    final String specificSourceBaseText = langCode == 'ko' ? '출처 링크' : 'Source link';
+    final String noSourceLinkText = langCode == 'ko' ? '(출처 링크 없음)' : '(Source link not available)';
+
+    // 일반적인 출처 정보 (Fallback 용)
+    const String generalSourceUrl = 'https://www.heart.org/en/healthy-living/healthy-eating/eat-smart/nutrition-basics/aha-dietary-recommendations';
+
+    // 초기 유효성 검사: 비어있거나 "출처 정보 없음" 키워드 포함 시
+    if (sourceText.trim().isEmpty || sourceText.contains('출처 정보 없음')) {
+      // "출처 정보 없음" 텍스트 표시 (스타일은 유지)
       return Padding(
         padding: const EdgeInsets.only(top: 8.0),
         child: Row(
@@ -802,7 +816,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
             const SizedBox(width: 6),
             Expanded(
               child: Text(
-                '출처 정보 없음', // 명확한 텍스트 표시
+                noSourceText, // 다국어 텍스트 적용
                 style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.orange),
               ),
             ),
@@ -811,27 +825,70 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
       );
     }
 
-    // URL 패턴으로 URL 추출 시도 (단순 URL 문자열 자체인지 확인)
+    // URL 패턴으로 URL 추출 시도
     final urlPattern = r'^(https?:\/\/)?([\w\-]+\.)+[\w\-]+(\/[\w\-./?%&=]*)?$';
     final regex = RegExp(urlPattern);
     final isUrlOnly = regex.hasMatch(sourceText.trim());
-    String? url;
-    String summary = sourceText; // 기본적으로 전체 텍스트를 요약으로 간주
+    String? specificUrl;
+    String summary = sourceText; // 기본값
+    bool useGeneralSource = false;
 
     if (isUrlOnly) {
-      url = sourceText.trim();
-      summary = '출처 링크'; // URL만 있는 경우 기본 요약 텍스트
+      specificUrl = sourceText.trim();
+      summary = specificSourceBaseText; // URL만 있을 때 기본 텍스트 (다국어 적용)
     } else {
-      // 복합적인 문자열에서 URL 추출 시도 (예: "요약 (URL: 링크)")
       final urlMatch = RegExp(r'\(URL:\s*(https?://[^\)]+)\)').firstMatch(sourceText);
       if (urlMatch != null) {
-        url = urlMatch.group(1);
+        specificUrl = urlMatch.group(1);
         summary = sourceText.substring(0, urlMatch.start).trim();
+      } else {
+        if (!regex.hasMatch(sourceText.trim())) {
+          useGeneralSource = true;
+        }
+        summary = sourceText;
+        useGeneralSource = true;
       }
-      // 만약 위 패턴으로 못 찾으면, URL 가능성이 있는 부분만 링크로 시도 (선택 사항)
-      // else if (regex.hasMatch(sourceText)) { ... }
     }
 
+    // 최종적으로 표시할 위젯 결정
+    if (useGeneralSource || specificUrl == null) {
+       // 요약 텍스트와 함께 일반 링크 표시
+      String displaySummary = summary.isNotEmpty ? "$summary ($generalSourceBaseText)" : generalSourceBaseText;
+      return _buildGeneralSourceLink(displaySummary, generalSourceUrl);
+    } else {
+      // 특정 요약/텍스트와 추출된 특정 URL 링크 표시
+      return Padding(
+        padding: const EdgeInsets.only(top: 8.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.source_outlined, size: 16, color: Colors.grey),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(summary.isNotEmpty ? summary : specificSourceBaseText, // 다국어 적용
+                       style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey)),
+                  GestureDetector(
+                    onTap: () => _launchUrl(specificUrl!, context),
+                    child: Text(
+                      specificUrl,
+                      style: const TextStyle(fontSize: 12, color: Colors.blue, decoration: TextDecoration.underline),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  // 일반 출처 링크 위젯 생성 헬퍼
+  Widget _buildGeneralSourceLink(String text, String url) {
     return Padding(
       padding: const EdgeInsets.only(top: 8.0),
       child: Row(
@@ -840,45 +897,56 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
           const Icon(Icons.source_outlined, size: 16, color: Colors.grey),
           const SizedBox(width: 6),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(summary.isNotEmpty ? summary : '출처 정보', // 요약이 비었으면 기본 텍스트
-                     style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey)),
-                if (url != null) ...[ // URL이 있을 경우에만 링크 표시 (리스트로 감싸기)
-                  GestureDetector(
-                    onTap: () async {
-                      try {
-                        final uri = Uri.parse(url!); // Uri.parse로 유효성 검사 강화
-                        if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri, mode: LaunchMode.externalApplication);
-                        } else {
-                          print('Could not launch $url');
-                        }
-                      } catch (e) {
-                         print('Invalid URL format: $url, Error: $e');
-                      }
-                    },
-                    child: Text(
-                      url,
-                      style: const TextStyle(fontSize: 12, color: Colors.blue, decoration: TextDecoration.underline),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ]
-                // 만약 URL은 없는데 요약만 있는 경우 (예: 출처 정보 없음 대신 다른 텍스트가 온 경우)
-                else if (summary.isNotEmpty && summary != '출처 정보 없음') ...[ // 리스트로 감싸기
-                  Text(
-                    '(출처 링크 없음)',
-                    style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey),
-                  ),
-                ]
-              ],
+            child: GestureDetector(
+               onTap: () => _launchUrl(url, context), // _launchUrl 헬퍼 함수 사용
+               child: Text(
+                 text,
+                 style: const TextStyle(fontSize: 12, color: Colors.blue, decoration: TextDecoration.underline),
+               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  // URL 실행 로직 헬퍼 함수 (오류 처리 포함)
+  Future<void> _launchUrl(String urlString, BuildContext context) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    Uri? uri = Uri.tryParse(urlString);
+
+    if (uri == null) {
+      print('Invalid URL format: $urlString');
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('잘못된 형식의 링크입니다: $urlString')),
+      );
+      return;
+    }
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        final bool launched = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+        if (!launched) {
+          print('Could not launch $urlString');
+          scaffoldMessenger.showSnackBar(
+            SnackBar(content: Text('링크를 열 수 없습니다: $urlString')),
+          );
+        }
+      } else {
+        print('Could not launch $urlString');
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('링크를 여는 중 오류 발생: $urlString')),
+        );
+      }
+    } catch (e) {
+      print('Error launching URL: $urlString, Error: $e');
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('링크를 여는 중 오류 발생: $e')),
+      );
+    }
   }
 
   void _toggleFoodSelection(String foodName) {

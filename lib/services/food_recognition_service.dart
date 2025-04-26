@@ -27,7 +27,7 @@ class FoodRecognitionService {
   factory FoodRecognitionService() => _instance;
   FoodRecognitionService._internal();
   
-  final String baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+  final String baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent';
   
   // 현재 앱의 언어 코드를 가져오는 메서드
   String get currentLanguageCode {
@@ -101,7 +101,7 @@ class FoodRecognitionService {
 1. 인식된 음식 이름 (recognized_food)
 2. 건강 상태를 고려한 음식 평가 (evaluation) - **객관적이고 과학적인 근거**에 기반하여 작성해주세요.
 3. 이 식단에서 건강 상태에 적합한 음식 추천 목록 (recommendations) **인식된 음식 이름만을 포함하여** 작성해주세요.
-4. 각 추천 음식에 대한 **근거가 되는** 출처 정보 (source) - **반드시 과학적 근거(논문, 연구 결과 등) 또는 공신력 있는 기관(정부 건강 부처, 주요 학회 등)의 공식 발표 자료에 기반한 외부 링크(URL)를 정확하게 포함해주세요.** 만약 **검증 가능한 공식 출처 URL을 찾을 수 없다면, 반드시 '출처 정보 없음' 문자열만 반환해주세요.** **개인 블로그나 일반 웹사이트 링크는 절대 포함하지 마세요.**
+4. 각 추천 음식의 근거가 되는 신뢰할 수 있는 출처 URL (source) - **학술 자료, 공신력 있는 기관의 공식 자료 등 검증 가능한 출처만 사용하고, 없다면 '출처 정보 없음'으로 표시하세요. 개인 블로그나 일반 웹사이트는 절대 포함하지 마세요.**
 
 **중요:** 메뉴에서 주 요리 위주로 분석하고, 반찬, 음료, 디저트 등 부수적인 항목은 제외해주세요.
 **매우 중요:** 모든 평가는 **객관적이고 과학적인 근거**에 기반해야 합니다. **근거 없는 주장은 절대 포함하지 마세요.**
@@ -163,7 +163,7 @@ $langInstruction
           "temperature": 0.4,
           "topK": 32,
           "topP": 0.95,
-          "maxOutputTokens": 2048,
+          "maxOutputTokens": 8192,
         },
         "safety_settings": [
           {
@@ -200,6 +200,8 @@ $langInstruction
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
+        print('Raw API Response: ${jsonEncode(jsonResponse)}'); 
+        
         
         // Gemini API 응답 파싱하여 분석 결과 생성
         return _parseFullGeminiResponse(jsonResponse);
@@ -239,146 +241,89 @@ $langInstruction
   // 전체 Gemini API 응답을 파싱하는 메서드
   FoodAnalysisResult _parseFullGeminiResponse(Map<String, dynamic> response) {
     try {
+      // 응답 유효성 검사 및 finishReason 확인
+      if (response['candidates'] == null || 
+          response['candidates'].isEmpty || 
+          response['candidates'][0]['finishReason'] != 'STOP' ||
+          response['candidates'][0]['content'] == null ||
+          response['candidates'][0]['content']['parts'] == null ||
+          response['candidates'][0]['content']['parts'].isEmpty) {
+            
+        final finishReason = response['candidates']?[0]?['finishReason'] ?? 'UNKNOWN';
+        print('응답 파싱 오류: 유효하지 않거나 중단된 응답 (finishReason: $finishReason)'); // 디버그 로그
+        print('전체 응답: $response'); // 전체 응답 로그
+        return FoodAnalysisResult(
+          recognizedFood: '오류',
+          evaluation: 'API 응답을 처리하는 중 오류가 발생했습니다. (Reason: $finishReason)',
+          recommendations: [],
+        );
+      }
+
       // Gemini API의 응답 구조에 맞게 파싱
       final String content = response['candidates'][0]['content']['parts'][0]['text'];
       print('API 응답 내용: $content'); // 디버그용 로그
-      
-      // JSON 형식으로 응답된 텍스트 추출
-      final RegExp jsonRegExp = RegExp(r'(\{.*\})', dotAll: true);
+
+      // JSON 형식으로 응답된 텍스트 추출 (마크다운 코드 블록 제거)
+      final RegExp jsonRegExp = RegExp(r'```(json)?\s*(\{.*?\})\s*```', dotAll: true);
+      String jsonString;
       final match = jsonRegExp.firstMatch(content);
-      
+
       if (match != null) {
-        final jsonString = match.group(1);
-        print('추출된 JSON 문자열: $jsonString'); // 디버그용 로그
-        
-        if (jsonString != null) {
-          try {
-            final Map<String, dynamic> data = jsonDecode(jsonString);
-            print('파싱된 데이터: $data'); // 디버그용 로그
-            
-            final String recognizedFood = data['recognized_food'] ?? '인식된 음식 정보 없음';
-            final String evaluation = data['evaluation'] ?? '평가 정보 없음';
-            
-            List<FoodRecommendation> recommendations = [];
-            
-            // 추천 목록 파싱
-            if (data.containsKey('recommendations') && data['recommendations'] is List) {
-              final List<dynamic> recommendationsList = data['recommendations'];
-              
-              recommendations = recommendationsList.map((item) => FoodRecommendation(
-                name: item['name'] ?? '이름 없음',
-                description: item['description'] ?? '설명 없음',
-                compatibilityScore: item['compatibilityScore'] is double 
-                  ? item['compatibilityScore'] 
-                  : double.parse(item['compatibilityScore'].toString()),
-                source: item['source'] ?? '',
-              )).toList();
-            }
-            
-            if (recommendations.isEmpty) {
-              // 추천 항목이 없다면 일부 텍스트를 사용하여 대안 항목 추가 가능성 검토
-              // 평가 텍스트에서 가능한 대안이 있는지 확인
-              if (evaluation.toLowerCase().contains("차선책") || 
-                  evaluation.toLowerCase().contains("대체") || 
-                  evaluation.toLowerCase().contains("그래도") || 
-                  evaluation.toLowerCase().contains("차선")) {
-                
-                recommendations.add(FoodRecommendation(
-                  name: '차선책: 메뉴에서 가장 덜 해로운 선택',
-                  description: evaluation,
-                  compatibilityScore: 0.6,
-                  source: '',
-                ));
-              }
-            }
-            
-            return FoodAnalysisResult(
-              recognizedFood: recognizedFood,
-              evaluation: evaluation,
-              recommendations: recommendations
-            );
-          } catch (e) {
-            print('JSON 파싱 오류: $e');
-            // 파싱 오류 발생 시 더 자세한 정보 출력
-            print('파싱 오류가 발생한 JSON 문자열: $jsonString');
-          }
-        }
-      }
-      
-      print('응답에서 JSON 형식을 찾을 수 없습니다: $content');
-      // 응답에서 일반 텍스트 형식으로 처리 시도
-      try {
-        // JSON이 아닌 일반 텍스트 응답에서 정보 추출 시도
-        final List<String> lines = content.split('\n');
-        String recognizedFood = '인식된 음식 정보 없음';
-        String evaluation = '평가 정보 없음';
-        List<FoodRecommendation> recommendations = [];
-        
-        // 간단한 텍스트 파싱 시도
-        for (final line in lines) {
-          if (line.toLowerCase().contains('인식된 음식') || 
-              line.toLowerCase().contains('recognized food') || 
-              line.toLowerCase().contains('음식:')) {
-            recognizedFood = line.split(':').length > 1 ? line.split(':')[1].trim() : recognizedFood;
-          } else if (line.toLowerCase().contains('평가') || 
-                     line.toLowerCase().contains('evaluation') || 
-                     line.toLowerCase().contains('건강 상태')) {
-            evaluation = line;
-          } else if (line.contains('1.') || line.contains('2.') || line.contains('3.')) {
-            // 번호가 매겨진 추천 항목으로 보이는 경우
-            final parts = line.split('.');
-            if (parts.length > 1) {
-              final name = parts[1].trim().split('-')[0].trim();
-              final description = parts.length > 2 ? parts.sublist(2).join('.').trim() : '추천 음식';
-              final score = 0.9 - (int.tryParse(parts[0].trim()) ?? 1) * 0.05; // 번호에 따라 점수 감소
-              
-              recommendations.add(FoodRecommendation(
-                name: name,
-                description: description,
-                compatibilityScore: score,
-                source: '',
-              ));
-            }
-          }
-        }
-        
-        if (recommendations.isEmpty) {
-          // 추천 항목이 없다면 일부 텍스트를 사용하여 대안 항목 추가 가능성 검토
-          // 평가 텍스트에서 가능한 대안이 있는지 확인
-          if (evaluation.toLowerCase().contains("차선책") || 
-              evaluation.toLowerCase().contains("대체") || 
-              evaluation.toLowerCase().contains("그래도") || 
-              evaluation.toLowerCase().contains("차선")) {
-            
-            recommendations.add(FoodRecommendation(
-              name: '차선책: 메뉴에서 가장 덜 해로운 선택',
-              description: evaluation,
-              compatibilityScore: 0.6,
-              source: '',
-            ));
-          }
-        }
-        
+        jsonString = match.group(2)!; // 마크다운 블록 안의 JSON 내용 추출
+      } else if (content.trim().startsWith('{') && content.trim().endsWith('}')) {
+        // 마크다운 블록이 없을 경우, 전체 내용이 JSON일 수 있음
+        jsonString = content.trim();
+      } else {
+        // JSON 형식을 찾을 수 없는 경우
+        print('응답 파싱 오류: JSON 형식을 찾을 수 없습니다.'); // 디버그 로그
+        print('전체 응답 내용: $content'); // 전체 응답 내용 로그
         return FoodAnalysisResult(
-          recognizedFood: recognizedFood,
-          evaluation: evaluation,
-          recommendations: recommendations
+          recognizedFood: '오류',
+          evaluation: 'API 응답에서 JSON 데이터를 추출하지 못했습니다.',
+          recommendations: [],
         );
-      } catch (e) {
-        print('일반 텍스트 파싱 오류: $e');
       }
-      
+
+      print('추출된 JSON: $jsonString'); // 디버그용 로그
+      final Map<String, dynamic> jsonResponse = jsonDecode(jsonString);
+
+      // recommendations 필드 파싱
+      final List<dynamic> recommendationsList = jsonResponse['recommendations'] ?? [];
+      final List<FoodRecommendation> recommendations = recommendationsList
+          .map((item) => FoodRecommendation(
+            name: item['name'] ?? '이름 없음',
+            description: item['description'] ?? '설명 없음',
+            compatibilityScore: item['compatibilityScore'] is double 
+              ? item['compatibilityScore'] 
+              : double.parse(item['compatibilityScore'].toString()),
+            source: item['source'] ?? '',
+          ))
+          .toList();
+
+      // recognized_food 처리: List 또는 String 가능성 처리
+      String recognizedFoodString = '음식 이름 없음';
+      if (jsonResponse['recognized_food'] != null) {
+        if (jsonResponse['recognized_food'] is List) {
+          List<String> foodList = List<String>.from(jsonResponse['recognized_food']);
+          recognizedFoodString = foodList.join(', '); // 쉼표로 구분된 문자열로 변환
+        } else if (jsonResponse['recognized_food'] is String) {
+          recognizedFoodString = jsonResponse['recognized_food'];
+        }
+      }
+
       return FoodAnalysisResult(
-        recognizedFood: '메뉴 분석 결과를 해석할 수 없습니다',
-        evaluation: '형식에 맞지 않는 응답을 받았습니다.',
-        recommendations: []
+        recognizedFood: recognizedFoodString,
+        evaluation: jsonResponse['evaluation'] ?? '평가 정보 없음',
+        recommendations: recommendations,
       );
-    } catch (e) {
-      print('응답 파싱 오류: $e');
+    } catch (e, stackTrace) {
+      print('응답 파싱 중 예외 발생: $e'); // 디버그용 로그
+      print('스택 트레이스: $stackTrace'); // 스택 트레이스 로그
+      print('전체 응답: $response'); // 전체 응답 로그
       return FoodAnalysisResult(
-        recognizedFood: '메뉴 응답 파싱 중 오류 발생',
-        evaluation: '메뉴 분석 결과를 처리하는 중 오류가 발생했습니다.',
-        recommendations: []
+        recognizedFood: '오류',
+        evaluation: 'API 응답 파싱 중 오류가 발생했습니다: $e',
+        recommendations: [],
       );
     }
   }
