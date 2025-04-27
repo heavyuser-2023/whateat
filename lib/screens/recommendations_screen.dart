@@ -48,22 +48,30 @@ class _GoogleBannerAdState extends State<GoogleBannerAd> {
     // 광고 단위 ID 결정 로직 수정
     String targetAdUnitId;
     final AdSize adSize;
+    final String adType = widget.adType; // adType 로깅을 위해 변수 사용
+
+    print('배너 광고 로드 시작 (Type: $adType)'); // 로드 시작 로그 추가
 
     if (Platform.isIOS) {
       // iOS의 경우 테스트 광고 ID 사용
-      print('iOS 플랫폼 감지됨. 테스트 광고 ID를 사용합니다.');
-      if (widget.adType == 'large') {
+      print('iOS 플랫폼 감지됨. 테스트 광고 ID를 사용합니다. (Type: $adType)');
+      // iOS에서는 adType 관계없이 표준 배너 테스트 ID 사용
+      targetAdUnitId = 'ca-app-pub-3940256099942544/2934735716'; 
+      adSize = adType == 'large' ? AdSize.mediumRectangle : AdSize.banner; // 요청 크기는 유지
+      /* 이전 로직 주석 처리
+      if (adType == 'large') {
         targetAdUnitId = 'ca-app-pub-3940256099942544/2521693316'; // iOS Medium Rectangle Test ID
         adSize = AdSize.mediumRectangle;
       } else {
         targetAdUnitId = 'ca-app-pub-3940256099942544/2934735716'; // iOS Banner Test ID
         adSize = AdSize.banner;
       }
+      */
     } else {
       // Android 또는 기타 플랫폼의 경우 기존 라이브 ID 사용
-      print('iOS 외 플랫폼 감지됨. 라이브 광고 ID를 사용합니다.');
+      print('iOS 외 플랫폼 감지됨. 라이브 광고 ID를 사용합니다. (Type: $adType)');
       targetAdUnitId = widget.adUnitId ?? 'ca-app-pub-5031305118839759/4468276310'; // 기존 라이브 ID
-      adSize = widget.adType == 'large' ? AdSize.mediumRectangle : AdSize.banner;
+      adSize = adType == 'large' ? AdSize.mediumRectangle : AdSize.banner;
     }
 
     _bannerAd = BannerAd(
@@ -72,13 +80,16 @@ class _GoogleBannerAdState extends State<GoogleBannerAd> {
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (ad) {
-          print('배너 광고 로드 성공 ($targetAdUnitId)');
-          setState(() {
-            _isAdLoaded = true;
-          });
+          print('배너 광고 로드 성공 (Type: $adType, ID: $targetAdUnitId)');
+          // 위젯이 마운트 해제된 후 setState 호출 방지
+          if (mounted) { 
+            setState(() {
+              _isAdLoaded = true;
+            });
+          }
         },
         onAdFailedToLoad: (ad, error) {
-          print('배너 광고 로드 실패 ($targetAdUnitId): \x1B[31m${error.message}\x1B[0m');
+          print('배너 광고 로드 실패 (Type: $adType, ID: $targetAdUnitId): \x1B[31m${error.message}\x1B[0m'); // 실패 로그에 adType 추가
           ad.dispose();
         },
       ),
