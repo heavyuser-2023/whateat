@@ -209,7 +209,7 @@ $langInstruction
         print('API 호출 실패: ${response.statusCode} - ${response.body}');
         print('API URL: $baseUrl');
         print('사용된 API 키 길이: ${apiKey.length}자');
-        print('사용된 모델: gemini-2.0-flash');
+        print('사용된 모델: gemini-2.5-flash-preview-04-17');
         
         // 자세한 오류 정보 추출 시도
         try {
