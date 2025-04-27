@@ -12,6 +12,7 @@ import 'meal_history_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:io' show Platform; // Platform 감지를 위해 추가
 
 class GoogleBannerAd extends StatefulWidget {
   final String adType;
@@ -44,23 +45,40 @@ class _GoogleBannerAdState extends State<GoogleBannerAd> {
   }
 
   void _loadBannerAd() {
-    // 광고 단위 ID를 직접 지정
-    final adUnitId = widget.adUnitId ?? 'ca-app-pub-5031305118839759/4468276310';
-    final adSize = widget.adType == 'large' ? AdSize.mediumRectangle : AdSize.banner;
+    // 광고 단위 ID 결정 로직 수정
+    String targetAdUnitId;
+    final AdSize adSize;
+
+    if (Platform.isIOS) {
+      // iOS의 경우 테스트 광고 ID 사용
+      print('iOS 플랫폼 감지됨. 테스트 광고 ID를 사용합니다.');
+      if (widget.adType == 'large') {
+        targetAdUnitId = 'ca-app-pub-3940256099942544/2521693316'; // iOS Medium Rectangle Test ID
+        adSize = AdSize.mediumRectangle;
+      } else {
+        targetAdUnitId = 'ca-app-pub-3940256099942544/2934735716'; // iOS Banner Test ID
+        adSize = AdSize.banner;
+      }
+    } else {
+      // Android 또는 기타 플랫폼의 경우 기존 라이브 ID 사용
+      print('iOS 외 플랫폼 감지됨. 라이브 광고 ID를 사용합니다.');
+      targetAdUnitId = widget.adUnitId ?? 'ca-app-pub-5031305118839759/4468276310'; // 기존 라이브 ID
+      adSize = widget.adType == 'large' ? AdSize.mediumRectangle : AdSize.banner;
+    }
 
     _bannerAd = BannerAd(
-      adUnitId: adUnitId,
+      adUnitId: targetAdUnitId, // 결정된 광고 ID 사용
       size: adSize,
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (ad) {
-          print('배너 광고 로드 성공');
+          print('배너 광고 로드 성공 ($targetAdUnitId)');
           setState(() {
             _isAdLoaded = true;
           });
         },
         onAdFailedToLoad: (ad, error) {
-          print('배너 광고 로드 실패:  31m${error.message} 0m');
+          print('배너 광고 로드 실패 ($targetAdUnitId): \x1B[31m${error.message}\x1B[0m');
           ad.dispose();
         },
       ),
