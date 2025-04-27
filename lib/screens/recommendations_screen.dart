@@ -459,10 +459,41 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '건강 평가: $_evaluation',
-                  style: const TextStyle(fontSize: 16),
+                  _evaluation,
+                  style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 15),
+                // --- AI 분석 결과 주의 문구 추가 --- 
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50, // 눈에 띄는 배경색
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.shade200, width: 1), // 테두리 추가
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          '중요 안내: 본 분석 결과는 AI가 생성한 일반적인 정보이며 참고용입니다. 앱 내 정보는 의학적 진단이나 전문가의 조언을 대체할 수 없으며, 인용된 출처 정보가 없거나 부정확할 수 있습니다. 건강 관련 결정은 반드시 의사 또는 자격을 갖춘 의료 전문가와 상의하십시오.',
+                          style: TextStyle(
+                            fontSize: 13.5, // 약간 작은 폰트
+                            color: Colors.orange.shade900, // 좀 더 진한 텍스트 색상
+                            height: 1.4, // 줄 간격
+                            fontWeight: FontWeight.w500, // 약간 두껍게
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // --- 주의 문구 끝 --- 
+                const SizedBox(height: 20),
+                const Divider(),
                 Text(
                   '고려된 건강 조건: ${widget.healthConditions.join(", ")}',
                   style: const TextStyle(fontSize: 14, color: Colors.grey),
