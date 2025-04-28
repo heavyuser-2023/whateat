@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path_pkg;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +14,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:io' show Platform; // Platform 감지를 위해 추가
+import 'package:flutter/rendering.dart';
 
 class GoogleBannerAd extends StatefulWidget {
   final String adType;
@@ -346,51 +348,88 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          '분석 결과',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.green.shade700,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history, color: Colors.white),
-            onPressed: _viewMealHistory,
-            tooltip: '식사 기록 보기',
-          ),
-          if (_recommendations.isNotEmpty && _selectedFoodNames.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.save),
-              onPressed: _isLoading ? null : _saveMeal,
-              tooltip: '선택한 음식을 저장',
+    // 상태 표시줄 높이 가져오기
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
+    // AppBar 높이 가져오기
+    const double appBarHeight = kToolbarHeight; // 기본 AppBar 높이
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark, // AppBar가 밝으므로 어두운 아이콘
+      child: Scaffold(
+        appBar: AppBar(
+          // AppBar 스타일은 기존 유지
+          title: const Text(
+            '분석 결과',
+            style: TextStyle(
+              // color: Colors.white, // 기본 테마 색상 사용
+              fontWeight: FontWeight.bold,
             ),
-        ],
-      ),
-      body: _isLoading
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 16),
-                  const Text('메뉴 이미지 분석 중...', style: TextStyle(fontSize: 16)),
-                  const SizedBox(height: 24),
-                  // 로딩 중 Google AdMob 배너 광고 추가
-                  const GoogleBannerAd(),
-                ],
+          ),
+          // backgroundColor: Colors.green.shade700, // 기본 테마 색상 사용
+          actions: [
+            IconButton(
+              icon: Icon(Icons.history, /*color: Colors.white*/), // 기본 테마 색상 사용
+              onPressed: _viewMealHistory,
+              tooltip: '식사 기록 보기',
+            ),
+            if (_recommendations.isNotEmpty && _selectedFoodNames.isNotEmpty)
+              IconButton(
+                icon: const Icon(Icons.save),
+                onPressed: _isLoading ? null : _saveMeal,
+                tooltip: '선택한 음식을 저장',
               ),
-            )
-          : _hasError
-              ? _buildErrorView()
-              : Column(
-                  children: [
-                    Expanded(child: _buildResultView()),
-                  ],
+          ],
+        ),
+        body: Stack( // Stack으로 감싸기
+          children: [
+            // 메인 콘텐츠 (기존 body 내용)
+            Padding(
+              // AppBar 영역을 침범하지 않도록 콘텐츠에 패딩 추가
+              padding: EdgeInsets.only(top: 0), // AppBar가 불투명하므로 추가 상단 패딩 불필요
+               child: _isLoading
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 16),
+                          const Text('메뉴 이미지 분석 중...', style: TextStyle(fontSize: 16)),
+                          const SizedBox(height: 24),
+                          const GoogleBannerAd(),
+                        ],
+                      ),
+                    )
+                  : _hasError
+                      ? _buildErrorView()
+                      : Column(
+                          children: [
+                            Expanded(child: _buildResultView()),
+                          ],
+                        ),
+            ),
+            // 상단 그라데이션 오버레이
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: statusBarHeight, // 상태 표시줄 높이만큼만
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.20), // 상단은 약간 어둡게
+                      Colors.black.withOpacity(0.0),  // 하단은 투명하게
+                    ],
+                    stops: const [0.0, 1.0],
+                  ),
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
   

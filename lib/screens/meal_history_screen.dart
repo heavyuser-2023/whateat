@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -7,6 +8,7 @@ import 'dart:typed_data';
 import '../database/database_helper.dart';
 import '../models/meal.dart';
 import '../widgets/photo_viewer_screen.dart';
+import 'package:flutter/rendering.dart';
 
 class MealHistoryScreen extends StatefulWidget {
   final bool refreshOnShow;
@@ -320,33 +322,75 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> with WidgetsBindi
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          '식사 기록',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
+    // 상태 표시줄 높이 가져오기
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
+    // AppBar 높이 가져오기 (기본값 사용)
+    const double appBarHeight = kToolbarHeight;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light, // AppBar가 어두우므로 밝은 아이콘
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            '식사 기록',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
+          backgroundColor: Colors.green.shade700,
         ),
-        backgroundColor: Colors.green.shade700,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _meals.isEmpty
-              ? const Center(
-                  child: Text(
-                    '아직 저장된 식사 기록이 없습니다',
-                    style: TextStyle(fontSize: 16),
+        body: Stack( // Stack으로 감싸기
+          children: [
+            // 메인 콘텐츠 (ListView)
+            Padding(
+              // AppBar 영역을 침범하지 않도록 ListView에 패딩 추가
+              padding: EdgeInsets.only(top: 0), // AppBar가 불투명하므로 추가 상단 패딩 불필요
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _meals.isEmpty
+                      ? const Center(
+                          child: Text(
+                            '아직 저장된 식사 기록이 없습니다',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        )
+                      : ListView.builder(
+                          // ListView 자체 패딩은 그대로 유지하거나 조정 가능
+                          itemCount: _meals.length,
+                          itemBuilder: (context, index) {
+                            final meal = _meals[index];
+                            return _buildMealCard(meal);
+                          },
+                        ),
+            ),
+             // 상단 그라데이션 오버레이 (AppBar 색상과 조화롭게 또는 필요시 조정)
+            // 이 화면은 AppBar가 불투명하고 색상이 진해서 상태바 아이콘이 잘 보이므로,
+            // 그라데이션 오버레이는 시각적으로 큰 변화를 주지 않거나 생략 가능.
+            // 하지만 일관성을 위해 추가 (필요 없다면 이 Positioned 위젯 제거)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: statusBarHeight, // 상태 표시줄 높이만큼만
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      // AppBar 색상과 유사하게 하거나 약간 어둡게
+                      Colors.black.withOpacity(0.20),
+                      Colors.black.withOpacity(0.0),
+                    ],
+                     stops: const [0.0, 1.0],
                   ),
-                )
-              : ListView.builder(
-                  itemCount: _meals.length,
-                  itemBuilder: (context, index) {
-                    final meal = _meals[index];
-                    return _buildMealCard(meal);
-                  },
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

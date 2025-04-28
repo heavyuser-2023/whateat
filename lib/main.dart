@@ -279,274 +279,185 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
-    final secondaryColor = Theme.of(context).colorScheme.secondary;
-    
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const MealHistoryScreen()),
-              );
-            },
-            tooltip: '식사 기록 보기',
-          ),
-        ],
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFFF4FBF4),
-              const Color(0xFFE8F5E9),
-              const Color(0xFFE0F2F1),
-            ],
-          ),
+    // 상태 표시줄 높이 가져오기
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark, // 기본 상태 표시줄 스타일
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: Icon(Icons.history, color: Theme.of(context).colorScheme.primary),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MealHistoryScreen()),
+                );
+              },
+              tooltip: '식사 기록 보기',
+            ),
+          ],
         ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 20),
-                  
-                  // 앱 로고 및 제목
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        // 앱 로고
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [primaryColor.withOpacity(0.1), Colors.white.withOpacity(0.5)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
+        body: Stack( // Stack으로 감싸기
+          children: [
+            // 메인 콘텐츠 (기존 body)
+            Container(
+              width: double.infinity,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    const Color(0xFFF4FBF4).withOpacity(0.8),
+                    const Color(0xFFE8F5E9).withOpacity(0.9),
+                    const Color(0xFFE0F2F1),
+                  ],
+                  stops: const [0.0, 0.4, 1.0],
+                ),
+              ),
+              child: SafeArea(
+                // SafeArea는 그라데이션 오버레이 아래의 콘텐츠에만 적용
+                top: false, // 상단 SafeArea는 직접 처리하므로 false
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.only(top: statusBarHeight + kToolbarHeight, left: 24.0, right: 24.0, bottom: 20.0), // AppBar 높이만큼 추가 패딩
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: <Widget>[
+                      // 앱 아이콘/로고
+                      Container(
+                        padding: const EdgeInsets.all(12.0),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.8), // 약간 투명한 흰색 배경
+                          borderRadius: BorderRadius.circular(24.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
                             ),
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: primaryColor.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: Image.asset(
-                              'assets/images/whateat_icon.png',
-                              width: 120,
-                              height: 120,
-                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16.0),
+                          child: Image.asset(
+                            'assets/images/whateat_icon.png', // 경로 수정
+                            height: 90,
                           ),
                         ),
-                        
-                        const SizedBox(height: 24),
-                        
-                        // 앱 제목
-                        Text(
-                          '왓이트',
-                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: primaryColor,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 12),
-                        
-                        // 앱 설명
-                        Text(
-                          '건강 상태에 맞는 맞춤형 식단을 추천받으세요',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[700],
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 40),
-                  
-                  // 면책 조항 위치 이동
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // 패딩 조정
-                    child: Text(
-                      '※ 본 앱의 음식 정보 및 추천은 인공지능(AI) 분석 결과로, 참고용 정보입니다.\n의료적 진단, 치료, 처방을 대체하지 않으며, 건강에 관한 중요한 결정은 반드시 전문 의료진과 상담하시기 바랍니다.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 30), // 버튼 위 간격 추가
-                  
-                  // 시작하기 버튼
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: primaryColor.withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: LinearGradient(
-                        colors: [primaryColor, secondaryColor.withOpacity(0.8)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
                       ),
-                    ),
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const HealthConditionsScreen(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.restaurant_menu, size: 24),
-                      label: const Text(
-                        '식단 추천 받기',
-                        style: TextStyle(
-                          fontSize: 18,
+                      const SizedBox(height: 24),
+                      // 앱 이름 또는 제목
+                      Text(
+                        '왓이트',
+                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary, // 테마 색상 적용
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      // 부제목
+                      Text(
+                        '건강 상태에 맞는 맞춤형 식단을 추천받으세요',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.black54, // 약간 어두운 회색
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 40),
+                      // AI 분석 결과 안내 문구
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '※ 본 앱의 음식 정보 및 추천은 인공지능(AI) 분석 결과로, 참고용 정보입니다. 의료적 진단, 치료, 처방을 대체하지 않으며, 건강에 관한 중요한 결정은 반드시 전문 의료진과 상담하시기 바랍니다.',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontSize: 12, // 폰트 크기 조정
+                            color: Colors.grey[700], // 좀 더 진한 회색
+                            height: 1.4, // 줄 간격 조정
+                          ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
+                      const SizedBox(height: 32),
+                      // 식단 추천 받기 버튼
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).colorScheme.primary, // 시작 색상
+                              Theme.of(context).colorScheme.secondary, // 끝 색상
+                            ],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
                           borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const HealthConditionsScreen()),
+                            );
+                          },
+                          icon: const Icon(Icons.restaurant_menu, color: Colors.white),
+                          label: const Text(
+                            '식단 추천 받기',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent, // 그라데이션 배경 사용
+                            shadowColor: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // 기능 소개 카드
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        _buildFeatureItem(
-                          Icons.health_and_safety,
-                          '건강 상태 맞춤',
-                          '나의 건강 상태에 맞는 최적의 식단을 추천해 드립니다.'
-                        ),
-                        
-                        const SizedBox(height: 20),
-                        
-                        _buildFeatureItem(
-                          Icons.camera_alt,
-                          '메뉴 사진 촬영',
-                          '음식 사진으로 메뉴를 분석하고 건강에 좋은 음식을 찾아드립니다.'
-                        ),
-                        
-                        const SizedBox(height: 20),
-                        
-                        _buildFeatureItem(
-                          Icons.recommend,
-                          '맞춤형 추천',
-                          '암, 콜레스테롤, 다이어트 등 다양한 건강 조건을 고려합니다.'
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
+            // 상단 그라데이션 오버레이
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: statusBarHeight + 20, // 상태 표시줄 높이 + 약간의 추가 영역
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.20), // 상단은 약간 어둡게
+                      Colors.black.withOpacity(0.0), // 하단은 투명하게
+                    ],
+                    stops: const [0.0, 1.0], // 0.0에서 1.0으로 자연스럽게 사라짐
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-    );
-  }
-  
-  Widget _buildFeatureItem(IconData icon, String title, String description) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF34A853).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            icon,
-            color: const Color(0xFF34A853),
-            size: 28,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF202124),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                  height: 1.4,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/health_condition.dart';
 import '../services/camera_service.dart';
 import 'recommendations_screen.dart';
+import 'package:flutter/rendering.dart';
 
 class CameraScreen extends StatefulWidget {
   final List<HealthCondition> selectedHealthConditions;
@@ -105,78 +107,113 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          '음식 사진 촬영',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.green.shade700,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Expanded(
-                  child: Center(
-                    child: _selectedImage == null
-                        ? const Text(
-                            '아래 버튼을 눌러 음식 사진을 촬영하거나 선택해주세요',
-                            style: TextStyle(fontSize: 16),
-                            textAlign: TextAlign.center,
-                          )
-                        : Image.file(_selectedImage!),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: _takePicture,
-                        icon: const Icon(Icons.camera_alt),
-                        label: const Text('사진 촬영'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: _pickImage,
-                        icon: const Icon(Icons.photo_library),
-                        label: const Text('갤러리에서 선택'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(
-                    left: 16.0,
-                    right: 16.0,
-                    bottom: 32.0,
-                  ),
-                  child: ElevatedButton(
-                    onPressed: _analyzeImage,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      minimumSize: const Size.fromHeight(50),
-                    ),
-                    child: const Text(
-                      '음식 분석하기',
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                  ),
-                ),
-              ],
+    // 상태 표시줄 높이 가져오기
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light, // AppBar가 어두우므로 밝은 아이콘
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            '음식 사진 촬영',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
             ),
+          ),
+          backgroundColor: Colors.green.shade700,
+        ),
+        body: Stack( // Stack으로 감싸기
+          children: [
+             // 메인 콘텐츠 (기존 body 내용)
+             Padding(
+               padding: EdgeInsets.only(top: 0), // AppBar가 불투명하므로 추가 상단 패딩 불필요
+               child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : Column(
+                      children: [
+                        Expanded(
+                          child: Center(
+                            child: _selectedImage == null
+                                ? const Text(
+                                    '아래 버튼을 눌러 음식 사진을 촬영하거나 선택해주세요',
+                                    style: TextStyle(fontSize: 16),
+                                    textAlign: TextAlign.center,
+                                  )
+                                : Image.file(_selectedImage!),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              ElevatedButton.icon(
+                                onPressed: _takePicture,
+                                icon: const Icon(Icons.camera_alt),
+                                label: const Text('사진 촬영'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Theme.of(context).colorScheme.primary,
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                              ElevatedButton.icon(
+                                onPressed: _pickImage,
+                                icon: const Icon(Icons.photo_library),
+                                label: const Text('갤러리에서 선택'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Theme.of(context).colorScheme.primary,
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            left: 16.0,
+                            right: 16.0,
+                            bottom: 32.0,
+                          ),
+                          child: ElevatedButton(
+                            onPressed: _analyzeImage,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              minimumSize: const Size.fromHeight(50),
+                            ),
+                            child: const Text(
+                              '음식 분석하기',
+                              style: TextStyle(fontSize: 18, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+             ),
+            // 상단 그라데이션 오버레이 (AppBar 색상과 조화롭게)
+            // AppBar가 불투명하고 색상이 진해서 필요 없을 수 있음
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: statusBarHeight, // 상태 표시줄 높이만큼만
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.20),
+                      Colors.black.withOpacity(0.0),
+                    ],
+                    stops: const [0.0, 1.0],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 } 
