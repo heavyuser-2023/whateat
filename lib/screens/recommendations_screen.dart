@@ -295,6 +295,9 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
         healthConditions: widget.healthConditions,
       );
 
+      // 저장할 이름 로그 추가
+      print('Saving meal with name: ${meal.name}');
+
       // 데이터베이스에 저장
       final int mealId = await DatabaseHelper.instance.insertMeal(meal);
       print('저장된 식사 ID: $mealId'); // 디버그 로그
@@ -336,9 +339,9 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
         builder: (BuildContext context) => const MealHistoryScreen(refreshOnShow: true),
       ),
     ).then((_) {
-      // 식사 기록 화면에서 돌아왔을 때 UI 갱신 (필요시)
+      // 식사 기록 화면에서 돌아왔을 때 UI 갱신 (필요시) - 선택 상태 유지를 위해 일단 제거
       print('식사 기록 화면에서 돌아옴'); // 디버그 로그
-      setState(() {});
+      // setState(() {}); // 선택 상태 유지를 위해 이 부분 제거
     });
   }
   
