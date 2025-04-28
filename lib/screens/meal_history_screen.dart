@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import '../database/database_helper.dart';
 import '../models/meal.dart';
+import '../widgets/photo_viewer_screen.dart';
 
 class MealHistoryScreen extends StatefulWidget {
   final bool refreshOnShow;
@@ -367,6 +368,9 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> with WidgetsBindi
       }
     }
     
+    // 이미지를 보여줄 수 있는지 여부
+    bool canShowImage = hasImageData || imageExists;
+
     return Card(
       elevation: 4,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -374,31 +378,32 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> with WidgetsBindi
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 이미지 영역
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            child: Container(
-              height: 180,
-              child: hasImageData
-                ? Image.memory(
-                    Uint8List.fromList(meal.imageData!),
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      print('이미지 메모리 로드 오류: $error');
-                      return Container(
-                        color: Colors.grey.shade200,
-                        child: const Center(
-                          child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
+          // 이미지 영역 - GestureDetector로 감싸기
+          GestureDetector(
+            onTap: canShowImage
+                ? () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PhotoViewerScreen(
+                          // imageData가 있으면 imageData 전달, 없으면 imagePath 전달
+                          imageData: hasImageData ? Uint8List.fromList(meal.imageData!) : null,
+                          imagePath: !hasImageData && imageExists ? meal.imagePath : null,
                         ),
-                      );
-                    },
-                  )
-                : imageExists
-                  ? Image.file(
-                      File(meal.imagePath),
+                      ),
+                    );
+                  }
+                : null, // 이미지가 없으면 onTap 비활성화
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              child: Container(
+                height: 180,
+                child: hasImageData
+                  ? Image.memory(
+                      Uint8List.fromList(meal.imageData!),
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        print('이미지 파일 로드 오류: $error');
+                        print('이미지 메모리 로드 오류: $error');
                         return Container(
                           color: Colors.grey.shade200,
                           child: const Center(
@@ -407,12 +412,27 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> with WidgetsBindi
                         );
                       },
                     )
-                  : Container(
-                      color: Colors.grey.shade200,
-                      child: const Center(
-                        child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
+                  : imageExists
+                    ? Image.file(
+                        File(meal.imagePath),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          print('이미지 파일 로드 오류: $error');
+                          return Container(
+                            color: Colors.grey.shade200,
+                            child: const Center(
+                              child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
+                            ),
+                          );
+                        },
+                      )
+                    : Container( // 이미지 없음 플레이스홀더
+                        color: Colors.grey.shade200,
+                        child: const Center(
+                          child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
           ListTile(
