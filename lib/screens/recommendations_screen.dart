@@ -102,6 +102,11 @@ class _GoogleBannerAdState extends State<GoogleBannerAd> {
 
   @override
   Widget build(BuildContext context) {
+    // iOS 플랫폼에서는 광고를 표시하지 않음
+    if (Platform.isIOS) {
+      return const SizedBox.shrink(); // 빈 위젯 반환
+    }
+
     if (_bannerAd == null || !_isAdLoaded) {
       return Container(
         height: widget.adType == 'large' ? 250 : 60,
