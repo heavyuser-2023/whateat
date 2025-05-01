@@ -135,10 +135,30 @@ class _CameraScreenState extends State<CameraScreen> {
                         Expanded(
                           child: Center(
                             child: _selectedImage == null
-                                ? const Text(
-                                    '아래 버튼을 눌러 음식 사진을 촬영하거나 선택해주세요',
-                                    style: TextStyle(fontSize: 16),
-                                    textAlign: TextAlign.center,
+                                ? Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                                    margin: const EdgeInsets.symmetric(horizontal: 40.0), // 좌우 여백 추가
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.shade50, // 연한 녹색 배경
+                                      borderRadius: BorderRadius.circular(12.0),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 5,
+                                          offset: const Offset(0, 3),
+                                        )
+                                      ]
+                                    ),
+                                    child: Text(
+                                      '아래 버튼을 눌러 메뉴판 또는 음식 사진을 촬영하거나 선택해주세요',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.green.shade800, // 진한 녹색 텍스트
+                                        fontWeight: FontWeight.w500, // 약간 두껍게
+                                        height: 1.4, // 줄 간격
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
                                   )
                                 : Image.file(_selectedImage!),
                           ),
