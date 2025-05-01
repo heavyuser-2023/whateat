@@ -17,17 +17,18 @@
 @end
 
 /// Loads ads. See GADAdLoaderAdTypes.h for available ad types.
+NS_SWIFT_NAME(AdLoader)
 @interface GADAdLoader : NSObject
 
 /// Object notified when an ad request succeeds or fails. Must conform to requested ad types'
-/// delegate protocols.
+/// delegate protocol. This property must be set before initiating ad requests.
 @property(nonatomic, weak, nullable) id<GADAdLoaderDelegate> delegate;
 
 /// The ad loader's ad unit ID.
 @property(nonatomic, readonly, nonnull) NSString *adUnitID;
 
 /// Indicates whether the ad loader is loading.
-@property(nonatomic, getter=isLoading, readonly) BOOL loading;
+@property(nonatomic, getter=isLoading, readonly) BOOL loading NS_SWIFT_NAME(isLoading);
 
 /// Returns an initialized ad loader configured to load the specified ad types.
 ///

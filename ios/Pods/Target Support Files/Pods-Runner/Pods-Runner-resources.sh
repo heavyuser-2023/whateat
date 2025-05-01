@@ -97,14 +97,12 @@ EOM
   esac
 }
 if [[ "$CONFIGURATION" == "Debug" ]]; then
+  install_resource "${PODS_CONFIGURATION_BUILD_DIR}/Google-Mobile-Ads-SDK/GoogleMobileAdsResources.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/GoogleUserMessagingPlatform/UserMessagingPlatformResources.bundle"
-  install_resource "${PODS_CONFIGURATION_BUILD_DIR}/GoogleUtilities/GoogleUtilities_Privacy.bundle"
-  install_resource "${PODS_CONFIGURATION_BUILD_DIR}/PromisesObjC/FBLPromises_Privacy.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/SDWebImage/SDWebImage.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/camera_avfoundation/camera_avfoundation_privacy.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/google_mobile_ads/google_mobile_ads.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/image_picker_ios/image_picker_ios_privacy.bundle"
-  install_resource "${PODS_CONFIGURATION_BUILD_DIR}/nanopb/nanopb_Privacy.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/path_provider_foundation/path_provider_foundation_privacy.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/record_ios/record_ios_privacy.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/shared_preferences_foundation/shared_preferences_foundation_privacy.bundle"
@@ -113,14 +111,12 @@ if [[ "$CONFIGURATION" == "Debug" ]]; then
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/webview_flutter_wkwebview/webview_flutter_wkwebview_privacy.bundle"
 fi
 if [[ "$CONFIGURATION" == "Release" ]]; then
+  install_resource "${PODS_CONFIGURATION_BUILD_DIR}/Google-Mobile-Ads-SDK/GoogleMobileAdsResources.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/GoogleUserMessagingPlatform/UserMessagingPlatformResources.bundle"
-  install_resource "${PODS_CONFIGURATION_BUILD_DIR}/GoogleUtilities/GoogleUtilities_Privacy.bundle"
-  install_resource "${PODS_CONFIGURATION_BUILD_DIR}/PromisesObjC/FBLPromises_Privacy.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/SDWebImage/SDWebImage.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/camera_avfoundation/camera_avfoundation_privacy.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/google_mobile_ads/google_mobile_ads.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/image_picker_ios/image_picker_ios_privacy.bundle"
-  install_resource "${PODS_CONFIGURATION_BUILD_DIR}/nanopb/nanopb_Privacy.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/path_provider_foundation/path_provider_foundation_privacy.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/record_ios/record_ios_privacy.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/shared_preferences_foundation/shared_preferences_foundation_privacy.bundle"
@@ -129,14 +125,12 @@ if [[ "$CONFIGURATION" == "Release" ]]; then
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/webview_flutter_wkwebview/webview_flutter_wkwebview_privacy.bundle"
 fi
 if [[ "$CONFIGURATION" == "Profile" ]]; then
+  install_resource "${PODS_CONFIGURATION_BUILD_DIR}/Google-Mobile-Ads-SDK/GoogleMobileAdsResources.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/GoogleUserMessagingPlatform/UserMessagingPlatformResources.bundle"
-  install_resource "${PODS_CONFIGURATION_BUILD_DIR}/GoogleUtilities/GoogleUtilities_Privacy.bundle"
-  install_resource "${PODS_CONFIGURATION_BUILD_DIR}/PromisesObjC/FBLPromises_Privacy.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/SDWebImage/SDWebImage.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/camera_avfoundation/camera_avfoundation_privacy.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/google_mobile_ads/google_mobile_ads.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/image_picker_ios/image_picker_ios_privacy.bundle"
-  install_resource "${PODS_CONFIGURATION_BUILD_DIR}/nanopb/nanopb_Privacy.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/path_provider_foundation/path_provider_foundation_privacy.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/record_ios/record_ios_privacy.bundle"
   install_resource "${PODS_CONFIGURATION_BUILD_DIR}/shared_preferences_foundation/shared_preferences_foundation_privacy.bundle"

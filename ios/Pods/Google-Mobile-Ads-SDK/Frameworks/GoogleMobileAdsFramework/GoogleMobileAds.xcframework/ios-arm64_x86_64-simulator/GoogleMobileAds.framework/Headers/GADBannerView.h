@@ -15,6 +15,7 @@
 
 /// A view that displays banner ads. See https://developers.google.com/admob/ios/banner to get
 /// started.
+NS_SWIFT_NAME(BannerView)
 @interface GADBannerView : UIView
 
 #pragma mark Initialization
@@ -36,9 +37,9 @@
 /// Example AdMob ad unit ID: @"ca-app-pub-0123456789012345/0123456789"
 @property(nonatomic, copy, nullable) IBInspectable NSString *adUnitID;
 
-/// Required reference to a root view controller that is used by the banner to present full screen
-/// content after the user interacts with the ad. The root view controller is most commonly the view
-/// controller displaying the banner.
+/// Reference to a root view controller that is used by the banner to present full screen
+/// content after the user interacts with the ad. If this is nil, the view controller containing the
+/// banner view is used.
 @property(nonatomic, weak, nullable) IBOutlet UIViewController *rootViewController;
 
 /// Required to set this banner view to a proper size. Never create your own GADAdSize directly.
@@ -60,9 +61,13 @@
 /// Requests an ad. The request object supplies targeting information.
 - (void)loadRequest:(nullable GADRequest *)request;
 
+/// Loads the ad and informs |delegate| of the outcome.
+- (void)loadWithAdResponseString:(nonnull NSString *)adResponseString NS_SWIFT_NAME(load(with:));
+
 /// A Boolean value that determines whether autoloading of ads in the receiver is enabled. If
 /// enabled, you do not need to call the loadRequest: method to load ads.
-@property(nonatomic, assign, getter=isAutoloadEnabled) IBInspectable BOOL autoloadEnabled;
+@property(nonatomic, assign, getter=isAutoloadEnabled)
+    IBInspectable BOOL autoloadEnabled NS_SWIFT_NAME(isAutoloadEnabled);
 
 #pragma mark Response
 
@@ -72,5 +77,8 @@
 
 /// Called when ad is estimated to have earned money. Available for allowlisted accounts only.
 @property(nonatomic, nullable, copy) GADPaidEventHandler paidEventHandler;
+
+/// Indicates whether the last loaded ad is a collapsible banner.
+@property(nonatomic, readonly) BOOL isCollapsible;
 
 @end

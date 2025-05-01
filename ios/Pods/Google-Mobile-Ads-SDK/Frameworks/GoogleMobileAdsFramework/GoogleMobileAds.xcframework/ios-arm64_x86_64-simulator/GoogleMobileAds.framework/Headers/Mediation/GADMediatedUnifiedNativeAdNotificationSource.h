@@ -12,6 +12,7 @@
 /// some action (e.g. opening an in app browser or opening the iTunes store) when handling methods
 /// in GADMediatedUnifiedNativeAd. Adapters in such case should notify the Google Mobile Ads SDK by
 /// calling the relevant methods from this class.
+NS_SWIFT_NAME(MediatedUnifiedNativeAdNotificationSource)
 @interface GADMediatedUnifiedNativeAdNotificationSource : NSObject
 
 /// Called by the adapter when it has registered an impression on the tracked view. Adapter should
@@ -45,12 +46,5 @@
 /// Called by the adapter when native video playback has ended.
 + (void)mediatedNativeAdDidEndVideoPlayback:
     (nonnull id<GADMediatedUnifiedNativeAd>)mediatedNativeAd;
-
-#pragma mark - Deprecated
-
-/// Deprecated. No replacement.
-+ (void)mediatedNativeAdWillLeaveApplication:
-    (nonnull id<GADMediatedUnifiedNativeAd>)mediatedNativeAd
-    GAD_DEPRECATED_MSG_ATTRIBUTE("Deprecated. No replacement.");
 
 @end

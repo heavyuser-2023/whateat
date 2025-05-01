@@ -12,6 +12,7 @@
 
 /// Reports information to the Google Mobile Ads SDK from the adapter. Adapters receive an ad event
 /// delegate when they provide a GADMediationAd by calling a render completion handler.
+NS_SWIFT_NAME(MediationAdEventDelegate)
 @protocol GADMediationAdEventDelegate <NSObject>
 
 /// Notifies Google Mobile Ads SDK that an impression occurred on the GADMediationAd.
@@ -37,22 +38,19 @@
 @end
 
 /// Reports banner related information to the Google Mobile Ads SDK from the adapter.
+NS_SWIFT_NAME(MediationBannerAdEventDelegate)
 @protocol GADMediationBannerAdEventDelegate <GADMediationAdEventDelegate>
-
-/// Deprecated. No replacement.
-- (void)willBackgroundApplication GAD_DEPRECATED_MSG_ATTRIBUTE("Deprecated. No replacement.");
 
 @end
 
 /// Reports interstitial related information to the Google Mobile Ads SDK from the adapter.
+NS_SWIFT_NAME(MediationInterstitialAdEventDelegate)
 @protocol GADMediationInterstitialAdEventDelegate <GADMediationAdEventDelegate>
-
-/// Deprecated. No replacement.
-- (void)willBackgroundApplication GAD_DEPRECATED_MSG_ATTRIBUTE("Deprecated. No replacement.");
 
 @end
 
 /// Reports native related information to the Google Mobile Ads SDK from the adapter.
+NS_SWIFT_NAME(MediationNativeAdEventDelegate)
 @protocol GADMediationNativeAdEventDelegate <GADMediationAdEventDelegate>
 
 /// Notifies Google Mobile Ads SDK that the GADMediationAd started video playback.
@@ -70,12 +68,10 @@
 /// Notifies Google Mobile Ads SDK that the GADMediationAd unmuted video playback.
 - (void)didUnmuteVideo;
 
-/// Deprecated. No replacement.
-- (void)willBackgroundApplication GAD_DEPRECATED_MSG_ATTRIBUTE("Deprecated. No replacement.");
-
 @end
 
 /// Reports rewarded related information to the Google Mobile Ads SDK from the adapter.
+NS_SWIFT_NAME(MediationRewardedAdEventDelegate)
 @protocol GADMediationRewardedAdEventDelegate <GADMediationAdEventDelegate>
 
 /// Notifies the Google Mobile Ads SDK that the GADMediationAd has rewarded the user.
@@ -87,14 +83,10 @@
 /// Notifies Google Mobile Ads SDK that the GADMediationAd's video playback finished.
 - (void)didEndVideo;
 
-#pragma mark - Deprecated
-/// Deprecated. Use -didRewardUser.
-- (void)didRewardUserWithReward:(nonnull GADAdReward *)reward
-    GAD_DEPRECATED_MSG_ATTRIBUTE("Deprecated. Use -didRewardUser.");
-
 @end
 
 /// Reports app open related information to the Google Mobile Ads SDK from the adapter.
+NS_SWIFT_NAME(MediationAppOpenAdEventDelegate)
 @protocol GADMediationAppOpenAdEventDelegate <GADMediationAdEventDelegate>
 
 @end

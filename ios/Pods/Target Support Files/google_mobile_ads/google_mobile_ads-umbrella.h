@@ -18,6 +18,7 @@
 #import "FLTGoogleMobileAdsCollection_Internal.h"
 #import "FLTGoogleMobileAdsPlugin.h"
 #import "FLTGoogleMobileAdsReaderWriter_Internal.h"
+#import "FLTMediationExtras.h"
 #import "FLTMediationNetworkExtrasProvider.h"
 #import "FLTMobileAds_Internal.h"
 #import "FLTNSString.h"
