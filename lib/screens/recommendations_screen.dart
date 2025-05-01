@@ -55,20 +55,9 @@ class _GoogleBannerAdState extends State<GoogleBannerAd> {
     print('배너 광고 로드 시작 (Type: $adType)'); // 로드 시작 로그 추가
 
     if (Platform.isIOS) {
-      // iOS의 경우 테스트 광고 ID 사용
       print('iOS 플랫폼 감지됨. 테스트 광고 ID를 사용합니다. (Type: $adType)');
-      // iOS에서는 adType 관계없이 표준 배너 테스트 ID 사용
-      targetAdUnitId = 'ca-app-pub-3940256099942544/2934735716'; 
+      targetAdUnitId = 'ca-app-pub-5031305118839759/8411193669'; 
       adSize = adType == 'large' ? AdSize.mediumRectangle : AdSize.banner; // 요청 크기는 유지
-      /* 이전 로직 주석 처리
-      if (adType == 'large') {
-        targetAdUnitId = 'ca-app-pub-3940256099942544/2521693316'; // iOS Medium Rectangle Test ID
-        adSize = AdSize.mediumRectangle;
-      } else {
-        targetAdUnitId = 'ca-app-pub-3940256099942544/2934735716'; // iOS Banner Test ID
-        adSize = AdSize.banner;
-      }
-      */
     } else {
       // Android 또는 기타 플랫폼의 경우 기존 라이브 ID 사용
       print('iOS 외 플랫폼 감지됨. 라이브 광고 ID를 사용합니다. (Type: $adType)');
