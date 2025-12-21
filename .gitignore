@@ -42,6 +42,7 @@ app.*.map.json
 ios/Pods/
 ios/Flutter/ephemeral/
 ios/.symlinks/
+ios/Flutter/flutter_export_environment.sh
 ios/Runner.xcworkspace/
 ios/Runner.xcodeproj/project.xcworkspace/
 ios/Runner.xcodeproj/xcuserdata/
