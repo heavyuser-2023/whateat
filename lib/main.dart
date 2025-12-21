@@ -23,7 +23,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  bool _showSplash = false;
+  bool _showSplash = true; // 시작 시 스플래시 화면 표시
 
   @override
   void initState() {
@@ -32,31 +32,64 @@ class _MyAppState extends State<MyApp> {
   }
   
   Future<void> _initializeApp() async {
-    // 데이터베이스 초기화
-    await _resetDatabaseIfNeeded();
+    // 1. 최소 지연시간 보장 (스플래시가 너무 순식간에 지나가는 것 방지)
+    final minSplashTime = Future.delayed(const Duration(seconds: 2));
     
-    // 상태 표시줄 다시 표시
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    // 2. 초기화 작업 병렬 시작 (가능한 경우)
+    try {
+      print('앱 초기화 시작...');
+      
+      // Google Mobile Ads 초기화 (비동기로 실행하되 기다리지 않거나 타임아웃 설정 가능)
+      // 광고 로딩이 오래 걸려도 앱 시작을 막지 않도록 함
+      MobileAds.instance.initialize().then((_) {
+        print('MobileAds 초기화 완료');
+      });
+
+      // 데이터베이스 초기화
+      await _resetDatabaseIfNeeded();
+      await DatabaseHelper.instance.database;
+      print('데이터베이스 준비 완료');
+
+      // 이미지 저장용 디렉토리 확인 및 생성
+      final appDir = await getApplicationDocumentsDirectory();
+      final mealImagesDir = Directory('${appDir.path}/meal_images');
+      if (!mealImagesDir.existsSync()) {
+        await mealImagesDir.create(recursive: true);
+      }
+
+      // SharedPreferences 초기화 및 데이터 확인
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getString('saved_meals') == null) {
+        await prefs.setString('saved_meals', '[]');
+      }
+      
+      print('모든 필수 초기화 완료');
+    } catch (e) {
+      print('초기화 중 오류 발생 (무시하고 진행): $e');
+    }
+
+    // 3. 최소 시간 대기 후 화면 전환
+    await minSplashTime;
+
+    if (mounted) {
+      setState(() {
+        _showSplash = false;
+      });
+      
+      // 앱이 완전히 로드된 후 상태 표시줄 복구
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
   }
   
-  // 데이터베이스 초기화 함수
+  // 데이터베이스 초기화 함수 (기존 로직 유지)
   Future<void> _resetDatabaseIfNeeded() async {
     try {
-      // 데이터베이스 경로 가져오기
       final dbPath = await getDatabasesPath();
       final path = join(dbPath, 'what_eat.db');
-      
-      // 데이터베이스 존재 여부 확인
       final bool exists = await databaseExists(path);
       
       if (!exists) {
-        // 데이터베이스가 존재하지 않는 경우에만 새로 생성
         print('데이터베이스가 존재하지 않아 새로 생성합니다.');
-        await DatabaseHelper.instance.database;
-        print('새로운 데이터베이스 생성됨');
-      } else {
-        print('기존 데이터베이스가 존재합니다. 초기화 작업을 건너뜁니다.');
-        // 데이터베이스 연결만 확인
         await DatabaseHelper.instance.database;
       }
     } catch (e) {
@@ -90,7 +123,7 @@ class _MyAppState extends State<MyApp> {
           bodyLarge: TextStyle(color: const Color(0xFF5F6368)),
           bodyMedium: TextStyle(color: const Color(0xFF5F6368)),
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           color: Colors.white,
@@ -198,74 +231,21 @@ Future<void> main() async {
   // 위젯 플러터 바인딩 초기화
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Google Mobile Ads SDK 초기화
-  await MobileAds.instance.initialize();
-  
-  // 앱 방향을 세로로만 설정
+  // 앱 방향을 세로로만 설정 (빠른 실행)
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
   
-  // 앱 실행 전 데이터베이스 초기화
-  try {
-    print('데이터베이스 초기화 시작');
-    final db = await DatabaseHelper.instance.database;
-    print('데이터베이스 초기화 완료: $db');
-    
-    // 이미지 저장용 디렉토리 생성
-    final appDir = await getApplicationDocumentsDirectory();
-    final mealImagesDir = Directory('${appDir.path}/meal_images');
-    if (!mealImagesDir.existsSync()) {
-      await mealImagesDir.create(recursive: true);
-      print('식사 이미지 디렉토리 생성: ${mealImagesDir.path}');
-    } else {
-      print('식사 이미지 디렉토리 존재 확인: ${mealImagesDir.path}');
-      // 디렉토리 내 파일 목록 확인
-      final files = mealImagesDir.listSync();
-      print('식사 이미지 디렉토리 내 파일 수: ${files.length}');
-    }
-    
-    // SharedPreferences 초기화 확인
-    final prefs = await SharedPreferences.getInstance();
-    final meals = prefs.getString('saved_meals');
-    if (meals != null) {
-      print('SharedPreferences에 저장된 식사 기록 발견: ${meals.length} 바이트');
-      
-      // 식사 기록이 유효한 JSON인지 확인
-      try {
-        final List<dynamic> mealsList = jsonDecode(meals);
-        print('저장된 식사 기록 수: ${mealsList.length}개');
-      } catch (e) {
-        print('저장된 식사 기록 형식이 잘못됨, 초기화 진행: $e');
-        await prefs.setString('saved_meals', '[]');
-      }
-    } else {
-      print('SharedPreferences에 저장된 식사 기록 없음, 기본값 설정');
-      await prefs.setString('saved_meals', '[]');
-    }
-  } catch (e) {
-    print('앱 초기화 중 오류 발생: $e');
-  }
-  
-  // .env 파일 로드 및 확인
+  // .env 파일 로드 (필수 설정이므로 여기서 실행)
   try {
     await dotenv.load(fileName: 'assets/config/.env');
-    print('환경 변수 로드됨: ${dotenv.env.keys.join(", ")}');
-    
-    if (dotenv.env['GOOGLE_API_KEY'] == null) {
-      print('경고: API 키가 로드되지 않았습니다. .env 파일을 확인하세요.');
-    } else {
-      print('API 키 길이: ${(dotenv.env['GOOGLE_API_KEY'] ?? '').length}자');
-    }
   } catch (e) {
     print('환경 변수 로드 오류: $e');
   }
   
-  // 네이티브 스플래시 화면을 즉시 제거하기 위한 설정
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  
   // ChangeNotifierProvider로 감싸서 HealthConditionProvider 제공
+  // 무거운 초기화 작업 등은 모두 제거하고 MyApp 내부로 이동
   runApp(
     ChangeNotifierProvider(
       create: (context) => HealthConditionProvider(),

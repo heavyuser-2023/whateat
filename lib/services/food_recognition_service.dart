@@ -27,7 +27,7 @@ class FoodRecognitionService {
   factory FoodRecognitionService() => _instance;
   FoodRecognitionService._internal();
   
-  final String baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent';
+  final String baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
   
   // 현재 앱의 언어 코드를 가져오는 메서드
   String get currentLanguageCode {
@@ -209,7 +209,7 @@ $langInstruction
         print('API 호출 실패: ${response.statusCode} - ${response.body}');
         print('API URL: $baseUrl');
         print('사용된 API 키 길이: ${apiKey.length}자');
-        print('사용된 모델: gemini-2.5-flash-preview-04-17');
+        print('사용된 모델: gemini-2.5-flash-preview-05-20');
         
         // 자세한 오류 정보 추출 시도
         try {

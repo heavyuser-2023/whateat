@@ -58,6 +58,11 @@ android/key.properties
 *.jks
 *.keystore
 
+# Desktop specific
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+macos/Flutter/ephemeral/
+
 # Sensitive information / Environment variables
 .env
 *.env
