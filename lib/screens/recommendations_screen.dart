@@ -9,8 +9,8 @@ import 'package:path/path.dart' as path_pkg;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/meal.dart';
-import '../services/food_recognition_service.dart';
-import '../database/database_helper.dart';
+import '../repositories/food_repository.dart';
+import '../utils/logger.dart';
 import 'meal_history_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -132,7 +132,7 @@ class RecommendationsScreen extends StatefulWidget {
 }
 
 class _RecommendationsScreenState extends State<RecommendationsScreen> {
-  final FoodRecognitionService _foodService = FoodRecognitionService();
+  final FoodRepository _foodRepository = FoodRepository();
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
@@ -154,32 +154,29 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
         _hasError = false;
       });
       
-      print('메뉴 이미지 분석 시작...'); // 디버그용 로그
-      print('건강 조건: ${widget.healthConditions.join(', ')}'); // 디버그용 로그
+      AppLogger.info('메뉴 이미지 분석 시작...');
+      AppLogger.info('건강 조건: ${widget.healthConditions.join(', ')}');
       
-      // 건강 조건이 너무 많으면 경고
       if (widget.healthConditions.length > 5) {
-        print('주의: 건강 조건이 5개를 초과합니다. ${widget.healthConditions.length}개 조건');
+        AppLogger.warning('주의: 건강 조건이 5개를 초과합니다. ${widget.healthConditions.length}개 조건');
       }
       
-      // 새로운 확장된 분석 메서드 사용
-      final analysisResult = await _foodService.analyzeFoodImage(
+      final analysisResult = await _foodRepository.analyzeFood(
         widget.imageFile,
         widget.healthConditions,
       );
       
-      print('분석 결과: 인식된 메뉴: ${analysisResult.recognizedFood}'); // 디버그용 로그
-      print('분석 결과: 평가: ${analysisResult.evaluation}'); // 디버그용 로그
-      print('분석 결과: 추천 개수: ${analysisResult.recommendations.length}'); // 디버그용 로그
+      AppLogger.info('분석 결과: 인식된 메뉴: ${analysisResult.recognizedFood}');
+      AppLogger.info('분석 결과: 평가: ${analysisResult.evaluation}');
+      AppLogger.info('분석 결과: 추천 개수: ${analysisResult.recommendations.length}');
       
-      // 추천 결과 로깅
       for (var rec in analysisResult.recommendations) {
-        print('추천: ${rec.name}, 점수: ${rec.compatibilityScore}'); // 디버그용 로그
+        AppLogger.info('추천: ${rec.name}, 점수: ${rec.compatibilityScore}');
       }
       
       // 추천 결과가 없거나 모델이 적절하게 응답하지 않았을 때 기본 처리
       if (analysisResult.recommendations.isEmpty) {
-        print('추천 결과가 없습니다.');
+        AppLogger.warning('추천 결과가 없습니다.');
         
         setState(() {
           _recommendations = []; // 빈 추천 목록 유지
@@ -198,7 +195,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
         });
       }
     } catch (e) {
-      print('메뉴 분석 오류: $e');
+      AppLogger.error('메뉴 분석 오류', e);
       setState(() {
         _isLoading = false;
         _hasError = true;
@@ -224,7 +221,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   }
 
   Future<void> _saveMeal() async {
-    print('식사 저장 시작'); // 디버그 로그
+    AppLogger.info('식사 저장 시작');
     
     try {
       setState(() {
@@ -242,7 +239,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
 
       // 원본 이미지 파일 접근 확인
       if (!await widget.imageFile.exists()) {
-        print('원본 이미지 파일이 존재하지 않음: ${widget.imageFile.path}');
+        AppLogger.error('원본 이미지 파일이 존재하지 않음: ${widget.imageFile.path}');
         _showErrorDialog('이미지 파일이 없어 저장할 수 없습니다');
         setState(() {
           _isLoading = false;
@@ -267,11 +264,10 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
 
       // 이미지 파일 복사
       await widget.imageFile.copy(savedImagePath);
-      print('이미지 저장됨: $savedImagePath'); // 디버그 로그
+      AppLogger.info('이미지 저장됨: $savedImagePath');
       
-      // 이미지 데이터 읽기
       List<int> imageData = await widget.imageFile.readAsBytes();
-      print('이미지 데이터 크기: ${imageData.length} 바이트'); // 디버그 로그
+      AppLogger.info('이미지 데이터 크기: ${imageData.length} 바이트');
 
       // 식사 정보 객체 생성
       final meal = Meal(
@@ -286,12 +282,10 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
         healthConditions: widget.healthConditions,
       );
 
-      // 저장할 이름 로그 추가
-      print('Saving meal with name: ${meal.name}');
+      AppLogger.info('Saving meal with name: ${meal.name}');
 
-      // 데이터베이스에 저장
-      final int mealId = await DatabaseHelper.instance.insertMeal(meal);
-      print('저장된 식사 ID: $mealId'); // 디버그 로그
+      final int mealId = await _foodRepository.saveMeal(meal);
+      AppLogger.info('저장된 식사 ID: $mealId');
       
       // 식사 목록 업데이트 (SharedPreferences)
       await _updateMealRecords();
@@ -305,7 +299,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
         const SnackBar(content: Text('식사 정보가 저장되었습니다')),
       );
     } catch (e) {
-      print('식사 저장 오류: $e');
+      AppLogger.error('식사 저장 오류', e);
       setState(() {
         _isLoading = false;
       });
@@ -314,7 +308,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   }
 
   void _viewMealHistory() {
-    print('식사 기록 화면으로 이동'); // 디버그 로그
+    AppLogger.info('식사 기록 화면으로 이동');
     
     // 식사 저장 중이면 완료될 때까지 기다림
     if (_isLoading) {
@@ -330,8 +324,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
         builder: (BuildContext context) => const MealHistoryScreen(refreshOnShow: true),
       ),
     ).then((_) {
-      // 식사 기록 화면에서 돌아왔을 때 UI 갱신 (필요시) - 선택 상태 유지를 위해 일단 제거
-      print('식사 기록 화면에서 돌아옴'); // 디버그 로그
+      AppLogger.info('식사 기록 화면에서 돌아옴');
       // setState(() {}); // 선택 상태 유지를 위해 이 부분 제거
     });
   }
@@ -1009,7 +1002,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
     Uri? uri = Uri.tryParse(urlString);
 
     if (uri == null) {
-      print('Invalid URL format: $urlString');
+      AppLogger.error('Invalid URL format: $urlString');
       scaffoldMessenger.showSnackBar(
         SnackBar(content: Text('잘못된 형식의 링크입니다: $urlString')),
       );
@@ -1023,19 +1016,19 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
           mode: LaunchMode.externalApplication,
         );
         if (!launched) {
-          print('Could not launch $urlString');
+          AppLogger.warning('Could not launch $urlString');
           scaffoldMessenger.showSnackBar(
             SnackBar(content: Text('링크를 열 수 없습니다: $urlString')),
           );
         }
       } else {
-        print('Could not launch $urlString');
+        AppLogger.warning('Could not launch $urlString');
         scaffoldMessenger.showSnackBar(
           SnackBar(content: Text('링크를 여는 중 오류 발생: $urlString')),
         );
       }
     } catch (e) {
-      print('Error launching URL: $urlString, Error: $e');
+      AppLogger.error('Error launching URL: $urlString', e);
       scaffoldMessenger.showSnackBar(
         SnackBar(content: Text('링크를 여는 중 오류 발생: $e')),
       );
@@ -1055,10 +1048,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   // 식사 레코드 목록 업데이트
   Future<void> _updateMealRecords() async {
     try {
-      // 모든 식사 기록 가져오기
-      final meals = await DatabaseHelper.instance.getMeals();
-      
-      // SharedPreferences 인스턴스 가져오기
+      final meals = await _foodRepository.getMealHistory();
       final prefs = await SharedPreferences.getInstance();
       
       // ID 목록 생성
@@ -1066,9 +1056,9 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
       
       // SharedPreferences에 저장
       await prefs.setString('meal_records', jsonEncode(mealIds));
-      print('식사 기록 업데이트됨: ${mealIds.length}개 항목');
+      AppLogger.info('식사 기록 업데이트됨: ${mealIds.length}개 항목');
     } catch (e) {
-      print('식사 기록 업데이트 중 오류: $e');
+      AppLogger.error('식사 기록 업데이트 중 오류', e);
     }
   }
 } 
