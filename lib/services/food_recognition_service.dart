@@ -205,9 +205,18 @@ class FoodRecognitionService {
         }
       }
 
+      String evaluationString = '평가 정보 없음';
+      if (jsonResponse['evaluation'] != null) {
+        if (jsonResponse['evaluation'] is List) {
+          evaluationString = (jsonResponse['evaluation'] as List).join(' ');
+        } else {
+          evaluationString = jsonResponse['evaluation'].toString();
+        }
+      }
+
       return FoodAnalysisResult(
         recognizedFood: recognizedFoodString,
-        evaluation: jsonResponse['evaluation'] ?? '평가 정보 없음',
+        evaluation: evaluationString,
         recommendations: recommendations,
       );
     } catch (e, stack) {

@@ -33,11 +33,26 @@ class FoodRecommendation {
   }
 
   factory FoodRecommendation.fromMap(Map<String, dynamic> map) {
+    String name = '';
+    if (map['name'] != null) {
+      name = map['name'] is List ? (map['name'] as List).join(', ') : map['name'].toString();
+    }
+
+    String description = '';
+    if (map['description'] != null) {
+      description = map['description'] is List ? (map['description'] as List).join(' ') : map['description'].toString();
+    }
+
+    String source = '';
+    if (map['source'] != null) {
+      source = map['source'] is List ? (map['source'] as List).join(', ') : map['source'].toString();
+    }
+
     return FoodRecommendation(
-      name: map['name'] ?? '',
-      description: map['description'] ?? '',
+      name: name,
+      description: description,
       compatibilityScore: map['compatibilityScore']?.toDouble() ?? 0.0,
-      source: map['source'] ?? '',
+      source: source,
     );
   }
 }
