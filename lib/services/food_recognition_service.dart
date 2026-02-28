@@ -34,7 +34,7 @@ class FoodRecognitionService {
     ));
   }
   
-  final String baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+  final String baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent';
   
   // Get platform specific locale
   String get currentLanguageCode {
