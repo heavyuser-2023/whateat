@@ -1,122 +1,19 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import '../models/food_analysis_result.dart';
-
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path_pkg;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../models/food_analysis_result.dart';
 import '../models/meal.dart';
 import '../repositories/food_repository.dart';
 import '../utils/logger.dart';
 import 'meal_history_screen.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'dart:io' show Platform; // Platform 감지를 위해 추가
-import 'package:flutter/rendering.dart';
-
-class GoogleBannerAd extends StatefulWidget {
-  final String adType;
-  final String? adUnitId;
-  
-  const GoogleBannerAd({
-    Key? key,
-    this.adType = 'normal',
-    this.adUnitId,
-  }) : super(key: key);
-
-  @override
-  State<GoogleBannerAd> createState() => _GoogleBannerAdState();
-}
-
-class _GoogleBannerAdState extends State<GoogleBannerAd> {
-  BannerAd? _bannerAd;
-  bool _isAdLoaded = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadBannerAd();
-  }
-
-  @override
-  void dispose() {
-    _bannerAd?.dispose();
-    super.dispose();
-  }
-
-  void _loadBannerAd() {
-    // 광고 단위 ID 결정 로직 수정
-    String targetAdUnitId;
-    final AdSize adSize;
-    final String adType = widget.adType; // adType 로깅을 위해 변수 사용
-
-    print('배너 광고 로드 시작 (Type: $adType)'); // 로드 시작 로그 추가
-
-    if (Platform.isIOS) {
-      print('iOS 플랫폼 감지됨. 테스트 광고 ID를 사용합니다. (Type: $adType)');
-      targetAdUnitId = 'ca-app-pub-5031305118839759/8411193669'; 
-      adSize = adType == 'large' ? AdSize.mediumRectangle : AdSize.banner; // 요청 크기는 유지
-    } else {
-      // Android 또는 기타 플랫폼의 경우 기존 라이브 ID 사용
-      print('iOS 외 플랫폼 감지됨. 라이브 광고 ID를 사용합니다. (Type: $adType)');
-      targetAdUnitId = widget.adUnitId ?? 'ca-app-pub-5031305118839759/4468276310'; // 기존 라이브 ID
-      adSize = adType == 'large' ? AdSize.mediumRectangle : AdSize.banner;
-    }
-
-    _bannerAd = BannerAd(
-      adUnitId: targetAdUnitId, // 결정된 광고 ID 사용
-      size: adSize,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          print('배너 광고 로드 성공 (Type: $adType, ID: $targetAdUnitId)');
-          // 위젯이 마운트 해제된 후 setState 호출 방지
-          if (mounted) { 
-            setState(() {
-              _isAdLoaded = true;
-            });
-          }
-        },
-        onAdFailedToLoad: (ad, error) {
-          print('배너 광고 로드 실패 (Type: $adType, ID: $targetAdUnitId): \x1B[31m${error.message}\x1B[0m'); // 실패 로그에 adType 추가
-          ad.dispose();
-        },
-      ),
-    );
-
-    _bannerAd?.load();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_bannerAd == null || !_isAdLoaded) {
-      return Container(
-        height: widget.adType == 'large' ? 250 : 60,
-        margin: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Center(
-          child: Text('광고 로딩 중...', style: TextStyle(color: Colors.grey)),
-        ),
-      );
-    }
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      alignment: Alignment.center,
-      width: _bannerAd!.size.width.toDouble(),
-      height: _bannerAd!.size.height.toDouble(),
-      child: AdWidget(ad: _bannerAd!),
-    );
-  }
-}
-
+import '../widgets/google_banner_ad.dart';
 class RecommendationsScreen extends StatefulWidget {
   final File imageFile;
   final List<String> healthConditions;
@@ -335,86 +232,78 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 상태 표시줄 높이 가져오기
     final double statusBarHeight = MediaQuery.of(context).padding.top;
-    // AppBar 높이 가져오기
-    const double appBarHeight = kToolbarHeight; // 기본 AppBar 높이
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark, // AppBar가 밝으므로 어두운 아이콘
+      value: SystemUiOverlayStyle.dark,
       child: Scaffold(
+        extendBodyBehindAppBar: true,
         appBar: AppBar(
-          // AppBar 스타일은 기존 유지
-          title: const Text(
-            '분석 결과',
-            style: TextStyle(
-              // color: Colors.white, // 기본 테마 색상 사용
-              fontWeight: FontWeight.bold,
+          backgroundColor: Colors.white.withOpacity(0.85),
+          elevation: 0,
+          flexibleSpace: ClipRRect(
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(color: Colors.transparent),
             ),
           ),
-          // backgroundColor: Colors.green.shade700, // 기본 테마 색상 사용
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: const Text(
+            '분석 결과',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           actions: [
             IconButton(
-              icon: Icon(Icons.history, /*color: Colors.white*/), // 기본 테마 색상 사용
+              icon: const Icon(Icons.history_rounded),
               onPressed: _viewMealHistory,
               tooltip: '식사 기록 보기',
             ),
             if (_recommendations.isNotEmpty && _selectedFoodNames.isNotEmpty)
               IconButton(
-                icon: const Icon(Icons.save),
+                icon: const Icon(Icons.bookmark_add_rounded),
                 onPressed: _isLoading ? null : _saveMeal,
                 tooltip: '선택한 음식을 저장',
               ),
           ],
         ),
-        body: Stack( // Stack으로 감싸기
-          children: [
-            // 메인 콘텐츠 (기존 body 내용)
-            Padding(
-              // AppBar 영역을 침범하지 않도록 콘텐츠에 패딩 추가
-              padding: EdgeInsets.only(top: 0), // AppBar가 불투명하므로 추가 상단 패딩 불필요
-               child: _isLoading
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFE0F7FA), // Very light Cyan
+                Color(0xFFF8F9FB), // Background default
+              ],
+              stops: [0.0, 0.4],
+            ),
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: _isLoading
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const CircularProgressIndicator(color: Color(0xFF00BFA5)),
+                        const SizedBox(height: 16),
+                        const Text('메뉴 이미지 분석 중...', style: TextStyle(fontSize: 16)),
+                        const SizedBox(height: 24),
+                        const GoogleBannerAd(),
+                      ],
+                    ),
+                  )
+                : _hasError
+                    ? _buildErrorView()
+                    : Column(
                         children: [
-                          const CircularProgressIndicator(),
-                          const SizedBox(height: 16),
-                          const Text('메뉴 이미지 분석 중...', style: TextStyle(fontSize: 16)),
-                          const SizedBox(height: 24),
-                          const GoogleBannerAd(),
+                          Expanded(child: _buildResultView()),
                         ],
                       ),
-                    )
-                  : _hasError
-                      ? _buildErrorView()
-                      : Column(
-                          children: [
-                            Expanded(child: _buildResultView()),
-                          ],
-                        ),
-            ),
-            // 상단 그라데이션 오버레이
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                height: statusBarHeight, // 상태 표시줄 높이만큼만
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withOpacity(0.20), // 상단은 약간 어둡게
-                      Colors.black.withOpacity(0.0),  // 하단은 투명하게
-                    ],
-                    stops: const [0.0, 1.0],
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -490,15 +379,15 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
           Container(
             width: double.infinity,
             margin: const EdgeInsets.symmetric(horizontal: 16.0),
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(24.0),
             decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(12.0),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24.0),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
@@ -614,21 +503,14 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
             // 건강에 좋은 음식 제목
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.only(top: 24.0, left: 16.0, right: 16.0, bottom: 8.0),
               child: Text(
                 '이 메뉴에서 건강에 좋은 음식 순위',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.green.shade800,
-                  fontWeight: FontWeight.bold,
-                  shadows: [
-                    Shadow(
-                      color: Colors.white,
-                      offset: Offset(0, 0),
-                      blurRadius: 3,
-                    ),
-                  ],
+                  color: const Color(0xFF00897B),
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
                 ),
-                textAlign: TextAlign.center,
               ),
             ),
             
@@ -652,29 +534,14 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
             // 차선책 음식 제목
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16.0),
-              margin: const EdgeInsets.only(top: 8.0),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.amber.shade50, Colors.white],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
+              padding: const EdgeInsets.only(top: 32.0, left: 16.0, right: 16.0, bottom: 8.0),
               child: Text(
-                '이 메뉴에서 차선책 추천',
+                '조금 더 나은 차선책 옵션',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.amber.shade800,
-                  fontWeight: FontWeight.bold,
-                  shadows: [
-                    Shadow(
-                      color: Colors.white,
-                      offset: Offset(0, 0),
-                      blurRadius: 3,
-                    ),
-                  ],
+                  color: const Color(0xFFE57373),
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
                 ),
-                textAlign: TextAlign.center,
               ),
             ),
             
@@ -695,43 +562,50 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   }
 
   Widget _buildRecommendationCard(FoodRecommendation recommendation, bool isAlternative) {
-    // 색상 설정 (일반 추천과 차선책 구분)
+    // 트렌디한 색상 적용
     final Color backgroundColor = isAlternative 
-        ? Colors.amber.shade50  // 차선책은 주황색 계열
-        : Colors.green.shade50; // 일반 추천은 녹색 계열
+        ? const Color(0xFFFFF0EC)  // Soft red/orange
+        : const Color(0xFFE0F2F1); // Soft teal
     
     final Color borderColor = isAlternative
-        ? Colors.amber.shade300
-        : Colors.green.shade300;
+        ? const Color(0xFFFFCCBC)
+        : const Color(0xFFB2DFDB);
     
     final Color iconColor = isAlternative
-        ? Colors.orange.shade700
-        : Colors.green.shade700;
+        ? const Color(0xFFE57373)
+        : const Color(0xFF00BFA5);
     
     final Widget icon = isAlternative
-        ? const Icon(Icons.lightbulb_outline, size: 24)
-        : const Icon(Icons.check_circle_outline, size: 24);
+        ? const Icon(Icons.change_circle_outlined, size: 24)
+        : const Icon(Icons.check_circle_rounded, size: 24);
     
     final bool isSelected = _selectedFoodNames.contains(recommendation.name);
     
     // 적합도 점수 정수 변환 (0-100 척도)
     final int compatibilityPercentage = (recommendation.compatibilityScore * 100).round();
     
-    return Card(
-      elevation: isSelected ? 4 : 1,
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isSelected ? Colors.blue.shade500 : borderColor,
-          width: isSelected ? 2.0 : 1.0,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isSelected ? const Color(0xFF00897B) : borderColor,
+          width: isSelected ? 2.5 : 1.0,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: isSelected ? const Color(0xFF00897B).withOpacity(0.15) : Colors.black.withOpacity(0.03),
+            blurRadius: isSelected ? 15 : 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: InkWell(
         onTap: () => _toggleFoodSelection(recommendation.name),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

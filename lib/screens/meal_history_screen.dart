@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -328,67 +329,67 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> with WidgetsBindi
     const double appBarHeight = kToolbarHeight;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light, // AppBar가 어두우므로 밝은 아이콘
+      value: SystemUiOverlayStyle.dark, // AppBar가 밝으므로 어두운 아이콘
       child: Scaffold(
+        extendBodyBehindAppBar: true,
         appBar: AppBar(
-          title: const Text(
-            '식사 기록',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+          backgroundColor: Colors.white.withOpacity(0.85),
+          elevation: 0,
+          flexibleSpace: ClipRRect(
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(color: Colors.transparent),
             ),
           ),
-          backgroundColor: Colors.green.shade700,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: const Text(
+            '식사 기록',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
         ),
-        body: Stack( // Stack으로 감싸기
-          children: [
-            // 메인 콘텐츠 (ListView)
-            Padding(
-              // AppBar 영역을 침범하지 않도록 ListView에 패딩 추가
-              padding: EdgeInsets.only(top: 0), // AppBar가 불투명하므로 추가 상단 패딩 불필요
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _meals.isEmpty
-                      ? const Center(
-                          child: Text(
-                            '아직 저장된 식사 기록이 없습니다',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        )
-                      : ListView.builder(
-                          // ListView 자체 패딩은 그대로 유지하거나 조정 가능
-                          itemCount: _meals.length,
-                          itemBuilder: (context, index) {
-                            final meal = _meals[index];
-                            return _buildMealCard(meal);
-                          },
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFF0FDF8), // Light mint default
+                Color(0xFFF8F9FB), // Background default
+              ],
+              stops: [0.0, 0.4],
+            ),
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFF00BFA5)))
+                : _meals.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.restaurant_menu_rounded, size: 80, color: Colors.grey.shade300),
+                            const SizedBox(height: 16),
+                            Text(
+                              '아직 기록된 식사가 없습니다',
+                              style: TextStyle(fontSize: 18, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                            ),
+                          ],
                         ),
-            ),
-             // 상단 그라데이션 오버레이 (AppBar 색상과 조화롭게 또는 필요시 조정)
-            // 이 화면은 AppBar가 불투명하고 색상이 진해서 상태바 아이콘이 잘 보이므로,
-            // 그라데이션 오버레이는 시각적으로 큰 변화를 주지 않거나 생략 가능.
-            // 하지만 일관성을 위해 추가 (필요 없다면 이 Positioned 위젯 제거)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                height: statusBarHeight, // 상태 표시줄 높이만큼만
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      // AppBar 색상과 유사하게 하거나 약간 어둡게
-                      Colors.black.withOpacity(0.20),
-                      Colors.black.withOpacity(0.0),
-                    ],
-                     stops: const [0.0, 1.0],
-                  ),
-                ),
-              ),
-            ),
-          ],
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.only(top: 16, bottom: 40),
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: _meals.length,
+                        itemBuilder: (context, index) {
+                          final meal = _meals[index];
+                          return _buildMealCard(meal);
+                        },
+                      ),
+          ),
         ),
       ),
     );
@@ -415,10 +416,19 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> with WidgetsBindi
     // 이미지를 보여줄 수 있는지 여부
     bool canShowImage = hasImageData || imageExists;
 
-    return Card(
-      elevation: 4,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -430,85 +440,163 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> with WidgetsBindi
                       context,
                       MaterialPageRoute(
                         builder: (context) => PhotoViewerScreen(
-                          // imageData가 있으면 imageData 전달, 없으면 imagePath 전달
                           imageData: hasImageData ? Uint8List.fromList(meal.imageData!) : null,
                           imagePath: !hasImageData && imageExists ? meal.imagePath : null,
                         ),
                       ),
                     );
                   }
-                : null, // 이미지가 없으면 onTap 비활성화
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: Container(
-                height: 180,
-                child: hasImageData
-                  ? Image.memory(
-                      Uint8List.fromList(meal.imageData!),
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        print('이미지 메모리 로드 오류: $error');
-                        return Container(
-                          color: Colors.grey.shade200,
-                          child: const Center(
-                            child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
-                          ),
-                        );
-                      },
-                    )
-                  : imageExists
-                    ? Image.file(
-                        File(meal.imagePath),
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          print('이미지 파일 로드 오류: $error');
-                          return Container(
-                            color: Colors.grey.shade200,
-                            child: const Center(
-                              child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
-                            ),
-                          );
-                        },
-                      )
-                    : Container( // 이미지 없음 플레이스홀더
-                        color: Colors.grey.shade200,
-                        child: const Center(
-                          child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
+                : null,
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  child: SizedBox(
+                    height: 200,
+                    width: double.infinity,
+                    child: hasImageData
+                      ? Image.memory(
+                          Uint8List.fromList(meal.imageData!),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => _buildImagePlaceholder(),
+                        )
+                      : imageExists
+                        ? Image.file(
+                            File(meal.imagePath),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => _buildImagePlaceholder(),
+                          )
+                        : _buildImagePlaceholder(),
+                  ),
+                ),
+                // 날짜 뱃지
+                Positioned(
+                  top: 16,
+                  left: 16,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 8,
+                        )
+                      ]
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.calendar_today_rounded, size: 14, color: Colors.white),
+                        const SizedBox(width: 6),
+                        Text(
+                          DateFormat('yyyy.MM.dd').format(meal.date),
+                          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
                         ),
-                      ),
-              ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          ListTile(
-            title: Text(meal.name),
-            subtitle: Text(DateFormat('yyyy년 MM월 dd일 HH:mm').format(meal.date)),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: () => _confirmDelete(meal),
-            ),
-          ),
+          
+          // 내용 영역
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(meal.description),
-                const SizedBox(height: 8),
-                const Text(
-                  '고려한 건강 상태:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        meal.name,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFE57373)),
+                      onPressed: () => _confirmDelete(meal),
+                      tooltip: '삭제',
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  meal.description,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey.shade700,
+                    height: 1.5,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Divider(height: 1),
+                ),
+                const Text(
+                  '고려한 건강 상태',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.grey),
+                ),
+                const SizedBox(height: 10),
                 Wrap(
                   spacing: 8.0,
+                  runSpacing: 8.0,
                   children: meal.healthConditions
-                      .map((condition) => Chip(
-                            label: Text(condition),
-                            backgroundColor: Colors.green.shade100,
+                      .map((condition) => Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE0F2F1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFB2DFDB)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.health_and_safety_rounded, size: 14, color: Color(0xFF00897B)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  condition,
+                                  style: const TextStyle(
+                                    color: Color(0xFF00897B),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ))
                       .toList(),
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImagePlaceholder() {
+    return Container(
+      color: const Color(0xFFF8F9FB),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.restaurant_rounded, size: 48, color: Colors.grey.shade400),
+          const SizedBox(height: 8),
+          Text(
+            '이미지 없음',
+            style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w500),
           ),
         ],
       ),
